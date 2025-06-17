@@ -1,0 +1,72 @@
+@import url('https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+@keyframes marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  display: inline-block;
+  animation: marquee 20s linear infinite;
+}
+:root {
+  color-scheme: light; /* Ensure the browser renders as light mode */
+}
+body {
+  background-color: white;
+}
+
+.hide-scrollbar {
+  overflow-x: auto; /* Allow horizontal scrolling */
+  overflow-y: hidden; /* Hide vertical scrollbar if present */
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none; /* For Chrome, Safari, and Opera */
+}
+
+.hide-scrollbar {
+  -ms-overflow-style: none; /* For Internet Explorer and Edge */
+  scrollbar-width: none; /* For Firefox */
+}
+body,
+html {
+  overflow-x: hidden;
+}
+@keyframes fadeInUp {
+  0% {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.card-animate:hover {
+  transform: scale(1.1) rotate(1deg);
+  box-shadow: 0px 10px 20px rgba(0, 0, 0, 0.2);
+  border: 2px solid rgba(255, 182, 193, 0.8); /* Light pink glow */
+  transition: all 0.5s ease;
+}
+
+.font-script {
+  font-family: 'Great Vibes', cursive;
+}
+
+input {
+  outline: none;
+}
+
+input::placeholder {
+  color: rgba(255, 255, 255, 0.8);
+}

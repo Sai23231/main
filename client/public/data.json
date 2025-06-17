@@ -1,0 +1,53 @@
+{
+    "products": [
+      {
+        "ID": "1",
+        "Category": "Elegant Wedding Venue",
+        "Image": "https://images.stockcake.com/public/c/c/d/ccd19530-ad49-482f-9f22-48e437ca9c57_large/elegant-wedding-venue-stockcake.jpg",
+        "Price": "Rs 49999.99",
+        "ShortDescription": "Elegant white lace wedding gown.",
+        "Description": "Make your dream wedding a reality with this exquisite lace wedding gown. This elegant dress features intricate lace detailing that adds a touch of timeless romance to your special day. The A-line silhouette is flattering on all body types, and the flowing train creates a stunning and memorable entrance. Whether you're planning a grand ballroom affair or an intimate garden wedding, this gown will make you feel like a true princess. With its delicate lace sleeves and a classic sweetheart neckline, this dress is designed to make you feel beautiful and confident as you walk down the aisle. Don't miss out on this opportunity to shine on your wedding day!"
+      },
+      {
+        "ID": "2",
+        "Category": "Venue-2",
+        "Image": "https://images.stockcake.com/public/1/c/2/1c26ca53-cf0d-436c-adce-8e236619ffd6_large/elegant-wedding-venue-stockcake.jpg",
+        "Price": "Rs 29999.99",
+        "ShortDescription": "Colorful birthday balloons set.",
+        "Description": "Add a pop of color and excitement to your birthday party with this vibrant balloon set. You'll receive a variety of balloons in different shapes and sizes, all designed to make your celebration unforgettable. From classic latex balloons to fun and whimsical foil balloons, this set has everything you need to create a festive atmosphere. Whether you're celebrating a child's birthday or a milestone birthday for an adult, these balloons will bring joy and laughter to your party. Create balloon bouquets, arches, or simply scatter them around the room for a burst of color. Get ready to make a wish and blow out the candles in style!"
+      },
+      {
+        "ID": "3",
+        "Category": "Venue-3",
+        "Image": "https://i.ibb.co/pXNkZxD/kendall-scott-g-Hz-Jx-TLJhu4-unsplash.jpg",
+        "Price": "Rs 99999.99",
+        "ShortDescription": "Silver-plated anniversary photo frame.",
+        "Description": "Celebrate your love story with this beautiful silver-plated anniversary photo frame. This elegant frame is the perfect way to display your cherished memories from the years you've spent together. It features a timeless design with intricate silver detailing that complements any decor. Whether you're celebrating one year or fifty years of love and commitment, this frame will hold a special place in your heart. Insert your favorite photo from your wedding day or any other meaningful moment, and let it serve as a constant reminder of the love and happiness you share. This frame also makes a thoughtful gift for friends and family celebrating their anniversaries."
+      },
+      {
+        "ID": "4",
+        "Category": "Venue-4",
+        "Image": "https://i.ibb.co/BysSRZZ/michael-negrete-OYA4j-Uccon-I-unsplash.jpg",
+        "Price": "Rs79999.99",
+        "ShortDescription": "Sparkling engagement ring.",
+        "Description": "Pop the question with this dazzling engagement ring that will leave your partner speechless. This exquisite ring features a brilliant-cut diamond set in a stunning white gold band. Its timeless and elegant design symbolizes your commitment to a lifetime of love and happiness together. Whether you're planning a surprise proposal or shopping for the perfect ring together, this engagement ring is sure to make the moment unforgettable. The sparkling diamond will catch the light and capture the essence of your love. Start your journey towards forever with this beautiful symbol of your devotion."
+      },
+      {
+        "ID": "5",
+        "Category": "Venue-5",
+        "Image": "https://i.ibb.co/19VKkyz/austin-distel-rxp-Th-Owu-Vg-E-unsplash.jpg",
+        "Price": "Rs 49999.99",
+        "ShortDescription": "Retirement party decorations kit.",
+        "Description": "Celebrate the end of a successful career and the beginning of a new chapter with this retirement party decorations kit. This comprehensive kit includes everything you need to throw a memorable retirement party that will honor and celebrate the retiree's accomplishments. From banners and balloons to tableware and centerpieces, this kit has it all. The decorations feature a tasteful and classic design that will suit any party theme. Whether you're planning a small gathering with close friends or a larger event with colleagues and family, this kit will help create a festive and joyful atmosphere. Send off the retiree with love, well-wishes, and a party they'll never forget!"
+      },
+      {
+        "ID": "6",
+        "Category": "Venue-6",
+        "Image": "https://i.ibb.co/BsvHZY7/aboodi-vesakaran-ox-P3bl3x-QPI-unsplash.jpg",
+        "Price": "Rs 39999.99",
+        "ShortDescription": "Adorable baby shower onesie cake topper.",
+        "Description": "Welcome the newest addition to your family with this adorable baby shower onesie cake topper. Whether you're hosting a gender reveal party or a traditional baby shower, this cake topper will add a cute and charming touch to your celebration. The onesie design is classic and universally loved, making it a perfect choice for any baby shower theme. Made from high-quality materials, this topper is not only cute but also durable. Place it atop your cake as the centerpiece, and let it be the focal point of your dessert table. Your guests will 'ooh' and 'aah' over the sweet design, making it a memorable part of your special day."
+      }
+    ]
+  }
+  

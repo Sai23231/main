@@ -1,0 +1,10 @@
+[data-aos] {
+  opacity: 0; /* Initial state: invisible */
+  transform: translateY(20px); /* Initial state: moved down 20px */
+  transition: all 0.5s; /* Transition effect for smooth animation */
+}
+
+[data-aos].aos-animate {
+  opacity: 1; /* Final state: visible */
+  transform: translateY(0); /* Final state: back to its original position */
+}

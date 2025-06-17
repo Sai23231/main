@@ -1,0 +1,21 @@
+/* Hide scrollbars for Webkit browsers (Chrome, Safari) */
+.scroll-container::-webkit-scrollbar {
+  display: none; /* Hide scrollbar for Chrome, Safari and Opera */
+}
+
+/* Hide scrollbars for Firefox */
+.scroll-container {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+/* Ensure smooth scrolling */
+.scroll-container {
+  scroll-behavior: smooth; /* Smooth scrolling */
+}
+
+/* General styling for the scroll container */
+.scroll-container {
+  overflow-x: auto; /* Allow horizontal scrolling */
+  white-space: nowrap; /* Prevent line breaks */
+}

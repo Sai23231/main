@@ -1,0 +1,59 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+/* Custom animated scrollbar for the entire app */
+.animated-scrollbar::-webkit-scrollbar, html::-webkit-scrollbar, body::-webkit-scrollbar {
+  width: 12px;
+  background: #ffe4ec;
+  border-radius: 8px;
+}
+.animated-scrollbar::-webkit-scrollbar-thumb, html::-webkit-scrollbar-thumb, body::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #f472b6 0%, #fbbf24 100%);
+  border-radius: 8px;
+  border: 2px solid #fff;
+  animation: scrollbarPulse 2s infinite alternate;
+}
+.animated-scrollbar::-webkit-scrollbar-thumb:hover, html::-webkit-scrollbar-thumb:hover, body::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #ec4899 0%, #f59e42 100%);
+}
+.animated-scrollbar::-webkit-scrollbar-corner, html::-webkit-scrollbar-corner, body::-webkit-scrollbar-corner {
+  background: #fff0f6;
+}
+
+@keyframes scrollbarPulse {
+  0% { box-shadow: 0 0 6px #f472b6; }
+  100% { box-shadow: 0 0 12px #fbbf24; }
+}
+
+.animated-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #f472b6 #ffe4ec;
+}
+
+html, body {
+  scrollbar-width: thin;
+  scrollbar-color: #f472b6 #ffe4ec;
+}
+
+/* Custom scrollbar for venues dropdown */
+.venues-scrollbar::-webkit-scrollbar {
+  width: 10px;
+  background: #ffe4ec;
+  border-radius: 8px;
+}
+.venues-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #f472b6 0%, #fbbf24 100%);
+  border-radius: 8px;
+  border: 2px solid #fff;
+}
+.venues-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #ec4899 0%, #f59e42 100%);
+}
+.venues-scrollbar::-webkit-scrollbar-corner {
+  background: #fff0f6;
+}
+
+/* For Firefox */
+.venues-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #f472b6 #ffe4ec;
+}

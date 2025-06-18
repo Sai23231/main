@@ -94,7 +94,7 @@ const [hoveredTool, setHoveredTool] = useState(null);
   const navLink = (
     <>
       <NavLink
-        to="/best-wedding-planner "
+        to="/best-event-planner"
         className={({ isActive }) =>
           isActive
             ? "font-serif block rounded-md px-3 py-2 text-lg font-semibold text-pink-900"
@@ -123,7 +123,7 @@ const [hoveredTool, setHoveredTool] = useState(null);
             : "font-serif block rounded-md px-3 py-2 text-lg font-semibold text-pink-700 hover:text-pink-900"
         }
       >
-        PlanWise
+        Services 
       </NavLink>
       <div
         className={`absolute left-0 mt-2 bg-white rounded-2xl shadow-2xl z-[5] w-[700px] p-0 transition-all duration-300 ease-in-out border border-pink-100 font-[Inter] ${

@@ -6,7 +6,6 @@ import {
   FiUsers, FiBriefcase, FiCalendar, FiMapPin, FiUser 
 } from 'react-icons/fi';
 
-
 const SponsorConnect = () => {
   const [sponsors, setSponsors] = useState([]);
   const [filter, setFilter] = useState('');
@@ -15,7 +14,7 @@ const SponsorConnect = () => {
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('all');
-  const [userType, setUserType] = useState('organizer'); // 'organizer' or 'sponsor'
+  const [userType, setUserType] = useState('organizer');
   const [organizerProfile, setOrganizerProfile] = useState(null);
   const [events, setEvents] = useState([]);
   const [selectedEvent, setSelectedEvent] = useState(null);
@@ -28,70 +27,111 @@ const SponsorConnect = () => {
     expectedAttendees: '',
     budgetNeeded: ''
   });
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  // Check authentication on component mount
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      setIsAuthenticated(true);
+      // You might want to verify the token with your backend here
+    }
+  }, []);
 
   // Fetch sponsors, organizer profile, and events
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        // Fetch sponsors
-        let endpoint = 'sponsors';
-        const params = {};
-        if (filter) params.industry = filter;
-        if (searchQuery) params.search = searchQuery;
-        const sponsorsRes = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/${endpoint}`, { params });
+        // Fetch sponsors with filters
+        const sponsorsRes = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/sponsors`, {
+          params: {
+            industry: filter === 'all' ? '' : filter,
+            search: searchQuery
+          },
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          }
+        });
         setSponsors(sponsorsRes.data);
 
         // Fetch organizer profile if logged in as organizer
         if (userType === 'organizer') {
-          const profileRes = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/organizers/me`);
+          const profileRes = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/auth/me`, {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem('token')}`
+            }
+          });
           setOrganizerProfile(profileRes.data);
           
           // Fetch organizer's events
           const eventsRes = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/events`, {
-            params: { organizerId: profileRes.data._id }
+            params: { organizerId: profileRes.data._id },
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem('token')}`
+            }
           });
           setEvents(eventsRes.data);
         }
       } catch (err) {
         console.error('Error fetching data', err);
+        if (err.response?.status === 401) {
+          // Handle unauthorized
+          localStorage.removeItem('token');
+          setIsAuthenticated(false);
+        }
       } finally {
         setIsLoading(false);
       }
     };
     
-    const debounceTimer = setTimeout(() => {
-      fetchData();
-    }, 300);
-    
-    return () => clearTimeout(debounceTimer);
-  }, [filter, searchQuery, userType]);
+    if (isAuthenticated) {
+      const debounceTimer = setTimeout(() => {
+        fetchData();
+      }, 300);
+      
+      return () => clearTimeout(debounceTimer);
+    }
+  }, [filter, searchQuery, userType, isAuthenticated]);
 
   const sendConnectionRequest = async () => {
     if (!selectedSponsor || !message || !selectedEvent) return;
     
     try {
-      await axios.post(`${import.meta.env.VITE_BACKEND_URL}/connections`, {
-        sponsorId: selectedSponsor._id,
+      await axios.post(`${import.meta.env.VITE_BACKEND_URL}/proposals/create`, {
         eventId: selectedEvent._id,
+        sponsorId: selectedSponsor._id,
+        amount: 0, // You might want to add amount input in your form
         message,
-        status: 'pending'
+        status: 'Pending'
+      }, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        }
       });
-      alert('Connection request sent successfully!');
+      alert('Proposal created successfully!');
       setSelectedSponsor(null);
       setMessage('');
       setSelectedEvent(null);
     } catch (err) {
-      console.error('Error sending connection', err);
-      alert('Failed to send request');
+      console.error('Error sending proposal', err);
+      alert('Failed to send proposal');
+      if (err.response?.status === 401) {
+        localStorage.removeItem('token');
+        setIsAuthenticated(false);
+      }
     }
   };
 
   const createNewEvent = async () => {
     try {
-      const res = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/events`, {
+      const res = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/events/create`, {
         ...newEvent,
         organizerId: organizerProfile._id
+      }, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        }
       });
       setEvents([...events, res.data]);
       setShowEventForm(false);
@@ -106,7 +146,31 @@ const SponsorConnect = () => {
     } catch (err) {
       console.error('Error creating event', err);
       alert('Failed to create event');
+      if (err.response?.status === 401) {
+        localStorage.removeItem('token');
+        setIsAuthenticated(false);
+      }
     }
+  };
+
+  const handleLogin = async (credentials) => {
+    try {
+      const res = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/auth/login`, credentials);
+      localStorage.setItem('token', res.data.token);
+      setIsAuthenticated(true);
+      // You might want to set user type based on response
+    } catch (err) {
+      console.error('Login failed', err);
+      alert('Login failed. Please check your credentials.');
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    setIsAuthenticated(false);
+    setOrganizerProfile(null);
+    setEvents([]);
+    setSponsors([]);
   };
 
   const industries = [
@@ -118,6 +182,8 @@ const SponsorConnect = () => {
     { id: 'sports', name: 'Sports', icon: <FiBriefcase className="mr-2" /> },
     { id: 'health', name: 'Health & Wellness', icon: <FiBriefcase className="mr-2" /> },
   ];
+
+ 
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">

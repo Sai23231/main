@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import Papa from "papaparse";
+import axios from "axios";
+import { FaStar } from "react-icons/fa";
 
 export default function VenueForm() {
   const [venues, setVenues] = useState([]);
@@ -24,74 +25,96 @@ export default function VenueForm() {
   const [activeFilter, setActiveFilter] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Load and parse CSV data
+  // Fetch venues from backend API
+  const fetchVenues = async () => {
+    try {
+      const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/venue`);
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching venues:", error);
+      throw error;
+    }
+  };
+
+  // Fetch reviews for a venue
+  const fetchReviews = async (venueId) => {
+    try {
+      const response = await axios.get(
+        `${import.meta.env.VITE_BACKEND_URL}/venue/venuereviews/${venueId}`
+      );
+      const reviewsData = response.data;
+
+      const totalRating = reviewsData.reduce(
+        (acc, review) => acc + review.rating,
+        0
+      );
+      const averageRating = reviewsData.length
+        ? (totalRating / reviewsData.length).toFixed(1)
+        : 0;
+
+      return {
+        averageRating,
+        count: reviewsData.length,
+      };
+    } catch (error) {
+      console.error("Error fetching reviews:", error);
+      return {
+        averageRating: 0,
+        count: 0,
+      };
+    }
+  };
+
+  // Extract city name from location string
+  const extractCity = (location) => {
+    if (!location) return "";
+    // Split by comma and get the first part (city name)
+    return location.split(",")[0].trim();
+  };
+
+  // Load venues data
   useEffect(() => {
-    const fetchData = async () => {
+    const loadData = async () => {
       try {
-        const response = await fetch("public/Dream_weds.venues.csv");
-        const csvData = await response.text();
+        const venuesData = await fetchVenues();
         
-        Papa.parse(csvData, {
-          header: true,
-          complete: (results) => {
-            if (!results.data || results.data.length === 0) {
-              throw new Error("No data found in CSV");
-            }
-
-            const processedVenues = results.data.map(venue => ({
+        // Process venues data to extract cities and add reviews
+        const processedVenues = await Promise.all(
+          venuesData.map(async (venue) => {
+            const reviewData = await fetchReviews(venue._id);
+            return {
               ...venue,
-              location: extractCity(venue.location),
-              rentPrice: parsePrice(venue.rentPrice),
-              capacity: venue["capacity.maxCapacity"] ? parseInt(venue["capacity.maxCapacity"]) : 0,
-              vegPrice: venue.price?.veg ? parseInt(venue.price.veg) : null,
-              nonVegPrice: venue.price?.nonVeg ? parseInt(venue.price.nonVeg) : null
-            }));
+              averageRating: reviewData.averageRating,
+              reviewCount: reviewData.count,
+              city: extractCity(venue.location), // Add extracted city
+              capacity: venue.guests ? parseInt(venue.guests) : 0,
+              rentPrice: venue.rentPrice ? parseInt(venue.rentPrice) : null,
+              vegPrice: venue.price?.veg && venue.price.veg !== "NA" ? parseInt(venue.price.veg) : null,
+              nonVegPrice: venue.price?.nonVeg && venue.price.nonVeg !== "NA" ? parseInt(venue.price.nonVeg) : null
+            };
+          })
+        );
 
-            // Extract unique values
-            const cities = [...new Set(processedVenues.map(v => v.location))].filter(Boolean);
-            const venueTypes = [...new Set(
-              processedVenues.flatMap(v => 
-                v["categories[0]"] ? [v["categories[0]"], v["categories[1]"]].filter(Boolean) : []
-              )
-            )];
+        // Extract unique values
+        const cities = [...new Set(processedVenues.map(v => v.city))].filter(Boolean);
+        const venueTypes = [...new Set(processedVenues.map(v => v.type))].filter(Boolean);
 
-            setVenues(processedVenues);
-            setUniqueValues(prev => ({
-              ...prev,
-              venueTypes,
-              cities
-            }));
-            setLoading(false);
-          },
-          error: (error) => {
-            throw new Error(`CSV parsing error: ${error.message}`);
-          }
-        });
+        setVenues(processedVenues);
+        setUniqueValues(prev => ({
+          ...prev,
+          venueTypes,
+          cities
+        }));
+        setLoading(false);
       } catch (error) {
-        console.error("Error loading venues:", error);
-        setError("Failed to load venue data: " + error.message);
+        console.error("Error loading data:", error);
+        setError("Failed to load data: " + error.message);
         setLoading(false);
       }
     };
 
-    fetchData();
+    loadData();
   }, []);
-
-  // Helper function to extract city from location
-  const extractCity = (location) => {
-    if (!location) return "";
-    const parts = location.split(",");
-    return parts[parts.length - 1].trim();
-  };
-
-  // Helper function to parse price
-  const parsePrice = (price) => {
-    if (price === "NA" || price === "On Request") return null;
-    if (typeof price === "string") {
-      return parseInt(price.replace(/\D/g, "")) || null;
-    }
-    return price;
-  };
 
   // Calculate match score based on filters
   const calculateMatchScore = (venue, filters) => {
@@ -103,9 +126,8 @@ export default function VenueForm() {
     if (maxPossibleScore === 0) return { venue, score: 0 };
 
     // Check venue type
-    if (filters.venueType.length > 0) {
-      const venueCategories = [venue["categories[0]"], venue["categories[1]"]].filter(Boolean);
-      if (venueCategories.some(cat => filters.venueType.includes(cat))) {
+    if (filters.venueType.length > 0 && venue.type) {
+      if (filters.venueType.includes(venue.type)) {
         score++;
       }
     }
@@ -137,8 +159,8 @@ export default function VenueForm() {
     }
 
     // Check city
-    if (filters.city.length > 0 && venue.location) {
-      if (filters.city.includes(venue.location)) {
+    if (filters.city.length > 0 && venue.city) {
+      if (filters.city.includes(venue.city)) {
         score++;
       }
     }
@@ -238,17 +260,17 @@ export default function VenueForm() {
   return (
     <div className="bg-gray-50 min-h-screen">
       {/* Hero Section */}
-      <div className="bg-gradient-to-r from-pink-500 to-purple-600 py-16 text-white">
+      <div className="bg-gradient-to-r from-pink-500 to-purple-600 py-8 text-white">
         <div className="container mx-auto px-4 text-center">
           <h1 className="font-serif text-4xl md:text-5xl font-bold mb-4 animate-bounce">
             💍 Find Your Perfect Wedding Venue 💒
           </h1>
-          <p className="text-lg text-center text-pink-200 mb-8 italic">
+          <p className="text-lg text-center text-pink-200 mb-4 italic">
             "A day to remember, a venue to cherish!"
           </p>
           
           {/* Search Bar */}
-         
+          
         </div>
       </div>
 
@@ -334,18 +356,7 @@ export default function VenueForm() {
                       {item.venue.name}
                     </h5>
                     <p className="flex items-center gap-1.5 text-base text-yellow-600">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                        className="w-4 h-4"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M10.868 2.884c-.321-.772-1.415-.772-1.736 0l-1.83 4.401-4.753.381c-.833.067-1.171 1.107-.536 1.651l3.62 3.102-1.106 4.637c-.194.813.691 1.456 1.405 1.02L10 15.591l4.069 2.485c.713.436 1.598-.207 1.404-1.02l-1.106-4.637 3.62-3.102c.635-.544.297-1.584-.536-1.65l-4.752-.382-1.831-4.401Z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
+                      <FaStar className="w-4 h-4" />
                       <span className="font-semibold">
                         {item.venue.averageRating || "N/A"} (
                         {item.venue.reviewCount || 0} reviews)

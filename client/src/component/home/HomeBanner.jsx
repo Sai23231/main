@@ -1,23 +1,23 @@
 import React, { useState, useEffect } from "react";
-import Papa from "papaparse";
 import {
   FaMicrophoneAlt, FaCamera, FaUtensils, FaPaintBrush, FaHeadphones,
   FaFileInvoice, FaBus, FaHotel, FaBoxOpen, FaStar
 } from "react-icons/fa";
 import { FiMapPin } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
 // Categories
 const categories = [
-  { icon: <FaMicrophoneAlt className="text-2xl" />, label: "Stage & Sound" },
-  { icon: <FaCamera className="text-2xl" />, label: "Photographer" },
-  { icon: <FaUtensils className="text-2xl" />, label: "Catering" },
-  { icon: <FaPaintBrush className="text-2xl" />, label: "Decoration" },
-  { icon: <FaHeadphones className="text-2xl" />, label: "DJ & Music" },
-  { icon: <FaFileInvoice className="text-2xl" />, label: "Invitations" },
-  { icon: <FaBus className="text-2xl" />, label: "Transport" },
-  { icon: <FaHotel className="text-2xl" />, label: "Accommodation" },
-  { icon: <FaBoxOpen className="text-2xl" />, label: "Packages", isNew: true },
+  { icon: <FaMicrophoneAlt className="text-black text-2xl" />, label: "Stage & Sound" },
+  { icon: <FaCamera className="text-black text-2xl" />, label: "Photographer" },
+  { icon: <FaUtensils className="text-black text-2xl" />, label: "Catering" },
+  { icon: <FaPaintBrush className="text-black text-2xl" />, label: "Decoration" },
+  { icon: <FaHeadphones className="text-black text-2xl" />, label: "DJ & Music" },
+  { icon: <FaFileInvoice className="text-black text-2xl" />, label: "Invitations" },
+  { icon: <FaBus className="text-black text-2xl" />, label: "Transport" },
+  { icon: <FaHotel className="text-black text-2xl" />, label: "Accommodation" },
+  { icon: <FaBoxOpen className="text-black text-2xl" />, label: "Packages", isNew: true },
 ];
 
 function VenueCard({ venue }) {
@@ -27,9 +27,6 @@ function VenueCard({ venue }) {
     if (venue._id) {
       navigate(`/wedding-venue/${venue._id}`);
       window.scrollTo(0, 0);
-    } else {
-      // Fallback for venues without _id (from CSV)
-      navigate(`/venue-details`, { state: { venue } });
     }
   };
 
@@ -61,14 +58,9 @@ function VenueCard({ venue }) {
         </div>
         
         <div className="mt-2 flex flex-wrap gap-1">
-          {venue["categories[0]"] && (
+          {venue.type && (
             <span className="bg-pink-100 text-pink-800 text-xs px-2 py-1 rounded-full line-clamp-1">
-              {venue["categories[0]"]}
-            </span>
-          )}
-          {venue["categories[1]"] && (
-            <span className="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full line-clamp-1">
-              {venue["categories[1]"]}
+              {venue.type}
             </span>
           )}
         </div>
@@ -76,24 +68,24 @@ function VenueCard({ venue }) {
         <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
           <div className="flex items-center">
             <span className="text-gray-500 mr-1">Capacity:</span>
-            <span className="font-medium">{venue.capacity || "N/A"}</span>
+            <span className="font-medium">{venue.guests || "N/A"}</span>
           </div>
           <div className="flex items-center">
             <span className="text-gray-500 mr-1">Rent:</span>
             <span className="font-medium">
-              {venue.rentPrice ? `₹${venue.rentPrice.toLocaleString()}` : "On Request"}
+              {venue.rentPrice ? `₹${venue.rentPrice}` : "On Request"}
             </span>
           </div>
-          {venue.vegPrice && (
+          {venue.price?.veg && venue.price.veg !== "NA" && (
             <div className="flex items-center">
               <span className="text-gray-500 mr-1">Veg:</span>
-              <span className="font-medium">₹{venue.vegPrice}/plate</span>
+              <span className="font-medium">₹{venue.price.veg}/plate</span>
             </div>
           )}
-          {venue.nonVegPrice && (
+          {venue.price?.nonVeg && venue.price.nonVeg !== "NA" && (
             <div className="flex items-center">
               <span className="text-gray-500 mr-1">Non-Veg:</span>
-              <span className="font-medium">₹{venue.nonVegPrice}/plate</span>
+              <span className="font-medium">₹{venue.price.nonVeg}/plate</span>
             </div>
           )}
         </div>
@@ -116,44 +108,79 @@ export default function DreamventzHomepage() {
   const [cities, setCities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [reviews, setReviews] = useState({});
 
-  // Load and parse CSV data
+  const fetchVenues = async () => {
+    try {
+      const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/venue`);
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching venues:", error);
+      throw error;
+    }
+  };
+
+  const fetchReviews = async (venueId) => {
+    try {
+      const response = await axios.get(
+        `${import.meta.env.VITE_BACKEND_URL}/venue/venuereviews/${venueId}`
+      );
+      const reviewsData = response.data;
+
+      const totalRating = reviewsData.reduce(
+        (acc, review) => acc + review.rating,
+        0
+      );
+      const averageRating = reviewsData.length
+        ? (totalRating / reviewsData.length).toFixed(1)
+        : 0;
+
+      return {
+        averageRating,
+        count: reviewsData.length,
+      };
+    } catch (error) {
+      console.error("Error fetching reviews:", error);
+      return {
+        averageRating: 0,
+        count: 0,
+      };
+    }
+  };
+
+  // Extract city name from location string
+  const extractCity = (location) => {
+    if (!location) return "";
+    // Split by comma and get the first part (city name)
+    return location.split(",")[0].trim();
+  };
+
+  // Load venues data
   useEffect(() => {
-    const fetchData = async () => {
+    const loadData = async () => {
       try {
-        // Load venues data
-        const venuesResponse = await fetch("/Dream_weds.venues.csv");
-        const venuesCsvData = await venuesResponse.text();
+        const venuesData = await fetchVenues();
         
-        // Parse venues data
-        Papa.parse(venuesCsvData, {
-          header: true,
-          complete: (results) => {
-            if (!results.data || results.data.length === 0) {
-              throw new Error("No venues data found in CSV");
-            }
-
-            const processedVenues = results.data.map(venue => ({
+        // Process venues data to extract cities and add reviews
+        const processedVenues = await Promise.all(
+          venuesData.map(async (venue) => {
+            const reviewData = await fetchReviews(venue._id);
+            return {
               ...venue,
-              location: extractCity(venue.location),
-              rentPrice: parsePrice(venue.rentPrice),
-              capacity: venue["capacity.maxCapacity"] ? parseInt(venue["capacity.maxCapacity"]) : 0,
-              vegPrice: venue.price?.veg ? parseInt(venue.price.veg) : null,
-              nonVegPrice: venue.price?.nonVeg ? parseInt(venue.price.nonVeg) : null
-            }));
+              averageRating: reviewData.averageRating,
+              reviewCount: reviewData.count,
+              city: extractCity(venue.location) // Add extracted city
+            };
+          })
+        );
 
-            // Extract unique cities
-            const uniqueCities = [...new Set(processedVenues.map(v => v.location))].filter(Boolean);
+        // Extract unique cities
+        const uniqueCities = [...new Set(processedVenues.map(v => v.city))].filter(Boolean);
 
-            setVenues(processedVenues);
-            setVenueRecommendations(processedVenues.slice(0, 4)); // Only show 4 venues initially
-            setCities(uniqueCities);
-            setLoading(false);
-          },
-          error: (error) => {
-            throw new Error(`Venues CSV parsing error: ${error.message}`);
-          }
-        });
+        setVenues(processedVenues);
+        setVenueRecommendations(processedVenues.slice(0, 4));
+        setCities(uniqueCities.sort());
+        setLoading(false);
       } catch (error) {
         console.error("Error loading data:", error);
         setError("Failed to load data: " + error.message);
@@ -161,32 +188,18 @@ export default function DreamventzHomepage() {
       }
     };
 
-    fetchData();
+    loadData();
   }, []);
-
-  // Helper function to extract city from location
-  const extractCity = (location) => {
-    if (!location) return "";
-    const parts = location.split(",");
-    return parts[parts.length - 1].trim();
-  };
-
-  // Helper function to parse price
-  const parsePrice = (price) => {
-    if (price === "NA" || price === "On Request") return "0";
-    if (typeof price === "string") {
-      return price.replace(/\D/g, "") || "0";
-    }
-    return price;
-  };
 
   // Filter venues based on selected location
   useEffect(() => {
-    const filtered = venues.filter(
-      (v) => (!location || v.location === location)
-    );
-    setVenueRecommendations(filtered.slice(0, 4)); // Only show 4 venues
-  }, [location, venues]);
+  if (!location) {
+    setVenueRecommendations(venues.slice(0, 4));
+  } else {
+    const filtered = venues.filter(v => v.city.toLowerCase() === location.toLowerCase());
+    setVenueRecommendations(filtered.slice(0, 4));
+  }
+}, [location, venues]);
 
   if (loading) return (
     <div className="flex justify-center items-center h-screen">
@@ -223,7 +236,7 @@ export default function DreamventzHomepage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-10 grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12">
         {/* Left Panel */}
         <div className="order-2 lg:order-1">
-          <h1 className="text-3xl sm:text-4xl font-bold mb-3 sm:mb-4 leading-snug">
+          <h1 className="text-3xl text-black sm:text-4xl font-bold mb-3 sm:mb-4 leading-snug">
             Event solutions at your fingertips
           </h1>
           <p className="text-base sm:text-lg text-pink-600 mb-6 sm:mb-8">
@@ -261,16 +274,18 @@ export default function DreamventzHomepage() {
 
       {/* Venue Recommendations - Responsive Grid */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
-        <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Venues Near You</h2>
+        <h2 className="text-xl text-black sm:text-2xl font-bold mb-4 sm:mb-6">
+          {location ? `Venues in ${location}` : "Recommended Venues"}
+        </h2>
         {venueRecommendations.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-            {venueRecommendations.map((venue, idx) => (
-              <VenueCard key={idx} venue={venue} />
+            {venueRecommendations.map((venue) => (
+              <VenueCard key={venue._id} venue={venue} />
             ))}
           </div>
         ) : (
           <div className="bg-white rounded-xl shadow p-6 sm:p-8 text-center text-pink-600">
-            No venues found. Try adjusting filters.
+            No venues found {location && `in ${location}`}. Try adjusting filters.
           </div>
         )}
       </section>

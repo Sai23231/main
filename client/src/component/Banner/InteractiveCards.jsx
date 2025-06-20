@@ -8,29 +8,29 @@ if (typeof window !== 'undefined') {
 }
 
 const cards = [
-  {
-    title: "Venue Matcher AI",
+ {
+    title: "Smart Tools ",
     description:
-      "Tell us your vibe and budget — our AI recommends perfect venues in your city, complete with availability, decor themes, and vendor ratings.",
-    imageUrl: "/venue-matcher.png",
-    blobUrl: "/blob-purple.svg",
-    imagePosition: "right",
-  },
-  {
-    title: "Dream Budget Planner",
-    description:
-      "Manage your event expenses smartly with real-time cost tracking, vendor rate comparison, and guest list budgeting. Stay stylish without surprises!",
-    imageUrl: "/budget-planner.png",
-    blobUrl: "/blob-gold.svg",
+      "Collaborate with your team, manage guest RSVPs, and track your planning tasks — all in one dashboard. DreamVentz gives you control, clarity, and convenience.",
+    imageUrl: "https://img.freepik.com/free-vector/design-process-concept-landing-page_23-2148319261.jpg?uid=R186408456&ga=GA1.1.1454009339.1722876500&semt=ais_hybrid&w=740",
+    blobUrl: "/blob-pink.svg",
     imagePosition: "left",
   },
   {
-    title: "Moodboard Generator",
+    title: "Transparent Pricing",
     description:
-      "Not sure what theme suits your event? Our tool generates dreamy color palettes, decor layouts, and inspiration boards from your preferences.",
-    imageUrl: "/moodboard-ai.png",
-    blobUrl: "/blob-blue.svg",
+      "No surprises, no hidden costs. We show you exactly what you pay for — from vendor fees to add-on services — so you can book with confidence.",
+    imageUrl: "https://img.freepik.com/free-vector/financial-obligation-document-promissory-bill-loan-agreement-debt-return-promise-issuer-payee-signing-contract-businessmen-making-deal_335657-848.jpg?uid=R186408456&ga=GA1.1.1454009339.1722876500&semt=ais_hybrid&w=740",
+    blobUrl: "/blob-silver.svg",
     imagePosition: "right",
+  },
+  {
+    title: "Instant Micro-Event Booking",
+    description:
+      "Need a birthday setup, farewell, or apartment party planned fast? Our instant booking tool connects you with verified vendors for quick, stylish celebrations.",
+    imageUrl: "https://img.freepik.com/free-vector/appointment-booking-smartphone_23-2148559902.jpg?uid=R186408456&ga=GA1.1.1454009339.1722876500&semt=ais_hybrid&w=740",
+    blobUrl: "/blob-green.svg",
+    imagePosition: "left",
   }
 ];
 

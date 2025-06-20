@@ -48,19 +48,17 @@ const Banner = () => {
         <div className="absolute inset-0 bg-black/50" />
 
         <div className="absolute inset-0 flex flex-col justify-center items-center text-center px-4 z-10">
-         <h2 className="text-yellow-400 text-xl md:text-3xl font-semibold mb-3 drop-shadow">
-  One Platform. Every Occasion.
+        <h2 className="text-yellow-400 font-serif text-xl md:text-3xl font-semibold mb-3 drop-shadow">
+  Celebrate Every Story, Big or Small ✨
 </h2>
-
-<h3 className="text-pink-300 text-lg md:text-2xl font-medium mb-4">
-  One-Stop Event Hub — Plan, Book & Celebrate Instantly.
+<h3 className="text-pink-300 text-lg font-serif md:text-2xl font-medium mb-4">
+  India’s Smartest Event Hub - Plan, Book & Celebrate Seamlessly.
 </h3>
-
-<h1 className="text-white text-4xl md:text-6xl font-extrabold leading-snug">
-  DreamVentz
-  <br />
-  <span className="text-pink-400">Make Everyday Moments Memorable</span>
+<h1 className="text-yellow-400 font-serif text-4xl md:text-6xl font-extrabold leading-snug">
+  DreamVentz <br />
+  <span className="text-pink-400">Turning Moments into Memories</span>
 </h1>
+
 
           <button
             onClick={() =>
@@ -70,7 +68,7 @@ const Banner = () => {
                   : "/best-event-planner"
               )
             }
-            className="mt-6 px-6 py-3 text-white bg-gradient-to-r from-pink-500 to-yellow-500 rounded-full shadow-lg hover:scale-105 transition duration-300"
+            className="mt-6 px-6 py-3 font-serif text-white bg-gradient-to-r from-pink-500 to-yellow-500 rounded-full shadow-lg hover:scale-105 transition duration-300"
           >
             {isEventMode ? "Discover Event Services" : "Start Planning Now"}
           </button>

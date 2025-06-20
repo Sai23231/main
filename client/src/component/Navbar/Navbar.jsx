@@ -486,7 +486,7 @@ const [hoveredTool, setHoveredTool] = useState(null);
       <div className="flex items-left space-x-3 px-10 lg:px-8 sm:px-2 lg:text-left text-left">
   <a className="flex items-center space-x-2 sm:space-x-3" href="/">
     <img src="/d.ico" className="h-8 sm:h-10" alt="DreamWedz Logo" />
-    <span className="text-lg text-left sm:text-2xl text-yellow-400 font-serif">DreamWedz</span>
+    <span className="text-lg text-left sm:text-2xl text-yellow-400 font-serif">DreamVentz</span>
   </a>
 </div>
 

@@ -11,7 +11,7 @@ import {
   addUserGuest,
   getUserGuests
 } from "../controllers/guest.controller.js";
-import verifyToken from "../middleware/verifyToken.js";
+import { verifyToken } from "../middleware/verifyToken.js";
 
 const router = Router();
 

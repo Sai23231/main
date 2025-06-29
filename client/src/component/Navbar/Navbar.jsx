@@ -103,11 +103,7 @@ const [hoveredTool, setHoveredTool] = useState(null);
       >
         Home
       </NavLink>
-      <NavLink to="/Wedplan" className={({ isActive }) => 
-        isActive ? "font-serif block rounded-md px-3 py-2 text-lg font-semibold text-pink-900" : 
-        "font-serif block rounded-md px-3 py-2 text-lg font-semibold text-pink-700 hover:text-pink-900"}>
-        WedPlan
-      </NavLink>
+     
    {/* Changed By Harsh Jain -- Added Planning Tools dropdown under PlanWise with comprehensive list of planning tools and features */}
    {/* Planning Tools Dropdown (Desktop) */}
     <div
@@ -329,7 +325,7 @@ const [hoveredTool, setHoveredTool] = useState(null);
         className="font-serif rounded-md px-3 py-2 text-lg font-semibold text-pink-700 hover:text-pink-900 flex items-center justify-between w-full"
         onClick={toggleMobilePlanningTools}
       >
-        PlanWise
+        Services
         <svg
           xmlns="http://www.w3.org/2000/svg"
           className={`h-5 w-5 transform transition-transform ${
@@ -472,7 +468,7 @@ const [hoveredTool, setHoveredTool] = useState(null);
   );
 
   return (
-    <div className="navbar bg-base-600 flex items-center justify-between lg:px-3 lg:py-3 p-2">
+    <div className="navbar bg-base-600 flex items-center justify-center lg:px-3 lg:py-3 p-2">
       {/* Mobile Menu Button */}
       <div className="navbar-start flex lg:hidden">
         <button className="btn btn-ghost" onClick={toggleMobileMenu} aria-label="Open Menu">
@@ -505,7 +501,7 @@ const [hoveredTool, setHoveredTool] = useState(null);
 
       {/* Desktop Navbar */}
       <div className="navbar-center hidden lg:flex">
-        <ul className="menu menu-horizontal px-8">{navLink}</ul>
+        <ul className="menu menu-horizontal px-10">{navLink}</ul>
       </div>
       
       

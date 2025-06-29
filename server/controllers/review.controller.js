@@ -1,7 +1,7 @@
 import mongoose, { isValidObjectId } from 'mongoose';
 import Review from '../models/Review.model.js'; // make sure the path is correct
 import Venue from '../models/Venue.model.js';   // make sure the path is correct
-import Vendor from '../models/vendor.model.js'; // ensure correct path
+import VendorList from '../models/vendor.model.js'; // ensure correct path
 
 export const addVenueReview = async (req, res) => {
   try {
@@ -53,7 +53,7 @@ export const addVendorReview = async (req, res) => {
     }
 
     // Check if vendor exists
-    const vendor = await Vendor.findById(vendorId);
+    const vendor = await VendorList.findById(vendorId);
     if (!vendor) {
       return res.status(404).json({ message: 'Vendor not found' });
     }

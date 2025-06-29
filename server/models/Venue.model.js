@@ -55,6 +55,22 @@ const VenueSchema = new Schema({
   mapEmbedUrl: { type: String, required: true },
   // detailUrl: { type: String, required: true },
   averageRating: { type: Number, default: 0 },
+  status: { 
+    type: String, 
+    enum: ["pending", "approved", "rejected"], 
+    default: "pending" 
+  },
+  portfolio: [{
+    url: { type: String, required: true },
+    publicId: { type: String },
+    filename: { type: String },
+    status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
+    uploadedAt: { type: Date, default: Date.now }
+  }]
+}, {
+  timestamps: true
 });
-const Venue = mongoose.model("Venue", VenueSchema);
+
+// Check if model already exists to prevent recompilation
+const Venue = mongoose.models.Venue || mongoose.model("Venue", VenueSchema);
 export default Venue;

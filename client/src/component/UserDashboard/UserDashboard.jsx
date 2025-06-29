@@ -8,6 +8,7 @@ const UserDashboard = () => {
   const [activeTab, setActiveTab] = useState("profile");
   const [user, setUser] = useState(null);
   const [bookings, setBookings] = useState([]);
+  const [serviceInquiries, setServiceInquiries] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -55,6 +56,12 @@ const UserDashboard = () => {
           `${import.meta.env.VITE_BACKEND_URL}/booking/user-bookings`, {withCredentials: true}
         );
         setBookings(bookingsResponse.data);
+
+        // Fetch service inquiries
+        const inquiriesResponse = await axios.get(
+          `${import.meta.env.VITE_BACKEND_URL}/api/service-inquiry/user-inquiries`, {withCredentials: true}
+        );
+        setServiceInquiries(inquiriesResponse.data.data || []);
       } catch (error) {
         console.error("Error fetching data:", error);
         showNotification("Failed to load profile data", "error");
@@ -663,6 +670,130 @@ const UserDashboard = () => {
     );
   };
 
+  const ServiceInquiryCard = ({ inquiry }) => {
+    const getStatusColor = (status) => {
+      switch (status) {
+        case 'pending': return 'bg-yellow-100 text-yellow-800';
+        case 'contacted': return 'bg-blue-100 text-blue-800';
+        case 'confirmed': return 'bg-green-100 text-green-800';
+        case 'cancelled': return 'bg-red-100 text-red-800';
+        default: return 'bg-gray-100 text-gray-800';
+      }
+    };
+
+    return (
+      <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100 hover:shadow-xl transition-all duration-300">
+        <div className="flex justify-between items-start mb-4">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-800 mb-1">
+              {inquiry.service?.service || 'Service Inquiry'}
+            </h3>
+            <p className="text-sm text-gray-500">
+              {inquiry.service?.category || 'General'}
+            </p>
+          </div>
+          <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(inquiry.status)}`}>
+            {inquiry.status.charAt(0).toUpperCase() + inquiry.status.slice(1)}
+          </span>
+        </div>
+
+        <div className="space-y-3 mb-4">
+          <div className="flex items-center text-sm text-gray-600">
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            {new Date(inquiry.eventDate).toLocaleDateString()}
+          </div>
+          <div className="flex items-center text-sm text-gray-600">
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+            </svg>
+            {inquiry.phone}
+          </div>
+        </div>
+
+        <div className="mb-4">
+          <p className="text-sm text-gray-600 line-clamp-3">
+            {inquiry.vision}
+          </p>
+        </div>
+
+        <div className="flex justify-between items-center">
+          <span className="text-xs text-gray-500">
+            {new Date(inquiry.createdAt).toLocaleDateString()}
+          </span>
+          <button className="text-pink-600 hover:text-pink-700 text-sm font-medium flex items-center gap-1">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+            </svg>
+            View Details
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  const ServiceInquiriesSection = () => {
+    if (isLoading) {
+      return (
+        <div className="flex justify-center items-center py-20">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-pink-500"></div>
+        </div>
+      );
+    }
+
+    if (serviceInquiries.length === 0) {
+      return (
+        <div className="bg-white rounded-xl shadow-lg p-12 text-center">
+          <div className="mx-auto max-w-md">
+            <div className="p-4 bg-pink-50 rounded-full inline-block mb-6">
+              <svg className="w-12 h-12 text-pink-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h2 className="text-2xl font-bold text-gray-800 mb-3">
+              No Service Inquiries Yet
+            </h2>
+            <p className="text-gray-600 mb-8">
+              You haven't made any service inquiries yet. Explore our services and start planning!
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <button
+                onClick={() => navigate("/pricing-plans")}
+                className="flex items-center justify-center gap-2 bg-pink-600 text-white px-6 py-3 rounded-lg hover:bg-pink-700 transition"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+                Browse Services
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-8">
+        <div className="flex justify-between items-center">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-800">Service Inquiries</h2>
+            <p className="text-gray-600">
+              Track your service inquiries and their status
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {serviceInquiries.map((inquiry) => (
+            <ServiceInquiryCard key={inquiry._id} inquiry={inquiry} />
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-pink-50 to-white py-12">
       <Notification />
@@ -726,12 +857,41 @@ const UserDashboard = () => {
               </svg>
               My Bookings
             </button>
+            <button
+              onClick={() => setActiveTab("inquiries")}
+              className={`px-6 py-3 rounded-lg transition-all font-medium flex items-center gap-2 ${
+                activeTab === "inquiries"
+                  ? "bg-pink-600 text-white shadow-md"
+                  : "text-gray-600 hover:bg-gray-50"
+              }`}
+            >
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              Service Inquiries
+            </button>
           </div>
         </div>
 
         {/* Content Section */}
         <div className="transition-all duration-300">
-          {activeTab === "profile" ? <ProfileSection /> : <BookingsSection />}
+          {activeTab === "profile" ? (
+            <ProfileSection />
+          ) : activeTab === "bookings" ? (
+            <BookingsSection />
+          ) : (
+            <ServiceInquiriesSection />
+          )}
         </div>
       </div>
     </div>

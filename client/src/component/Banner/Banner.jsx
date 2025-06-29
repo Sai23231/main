@@ -49,7 +49,7 @@ const Banner = () => {
 
         <div className="absolute inset-0 flex flex-col justify-center items-center text-center px-4 z-10">
         <h2 className="text-yellow-400 font-serif text-xl md:text-3xl font-semibold mb-3 drop-shadow">
-  Celebrate Every Story, Big or Small ✨
+  Plan Less. Celebrate More. ✨
 </h2>
 <h3 className="text-pink-300 text-lg font-serif md:text-2xl font-medium mb-4">
   India’s Smartest Event Hub - Plan, Book & Celebrate Seamlessly.

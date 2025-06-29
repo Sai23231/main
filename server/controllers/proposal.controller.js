@@ -208,4 +208,56 @@ export const getAllProposalsByStatus = async (req, res) => {
   }
 };
 
+// Sponsor response to proposal
+export const respondToProposal = async (req, res) => {
+  try {
+    const { proposalId } = req.params;
+    const { response, counterOffer, additionalDetails } = req.body;
+    const sponsorId = req.id; // From auth middleware
+
+    if (!(proposalId && isValidObjectId(proposalId))) {
+      return res.status(400).json({ message: 'Invalid proposal ID' });
+    }
+
+    if (!response) {
+      return res.status(400).json({ message: 'Response is required' });
+    }
+
+    // Find the proposal
+    const proposal = await Proposal.findById(proposalId);
+    if (!proposal) {
+      return res.status(404).json({ message: 'Proposal not found' });
+    }
+
+    // Verify the sponsor is responding to their own proposal
+    if (proposal.sponsorId.toString() !== sponsorId) {
+      return res.status(403).json({ message: 'You can only respond to your own proposals' });
+    }
+
+    // Update proposal with response
+    const updatedProposal = await Proposal.findByIdAndUpdate(
+      proposalId,
+      {
+        sponsorResponse: {
+          response,
+          counterOffer: counterOffer || null,
+          additionalDetails: additionalDetails || '',
+          respondedAt: new Date()
+        },
+        status: response === 'accepted' ? 'Approved' : 
+               response === 'rejected' ? 'Rejected' : 'Pending'
+      },
+      { new: true }
+    ).populate('eventId').populate('sponsorId');
+
+    res.status(200).json({ 
+      message: 'Proposal response submitted successfully', 
+      proposal: updatedProposal 
+    });
+  } catch (error) {
+    console.error('Error responding to proposal:', error);
+    res.status(500).json({ message: 'Server error while responding to proposal' });
+  }
+};
+
 

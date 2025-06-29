@@ -19,13 +19,18 @@ const UserAuth = () => {
   const [passwordError, setPasswordError] = useState(null);
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  // const userSignedIn = useSelector(selectLoggedInUser);
+  const userSignedIn = useSelector(selectLoggedInUser);
 
   const [otpSent, setOtpSent] = useState(false);
   const [otp, setOtp] = useState(["", "", "", ""]);
   const inputRefs = useRef([]);
   const [resendDisabled, setResendDisabled] = useState(false);
   const [timer, setTimer] = useState(30);
+
+  // If user is already logged in, redirect to home
+  if (userSignedIn) {
+    return <Navigate to="/" replace={true} />;
+  }
 
   const handleChange = (e, index) => {
     const value = e.target.value;
@@ -157,18 +162,11 @@ const UserAuth = () => {
       const { data } = response;
       if (data.success) {
         dispatch(setLoggedInUser(data.user));
-        // localStorage.setItem("token", data.token);
-        // localStorage.setItem("email", data.user.email);
         toast.success(
           isLogin ? "Logged in successfully!" : "Registered successfully!"
         );
-        const isAdmin = data.user.email.endsWith('@admin.com');
-        // Redirect accordingly
-        if (isAdmin) {
-          navigate("/admin/dashboard");
-        } else {
-          navigate("/");
-        }
+        // Always redirect to home page for regular users
+        navigate("/");
         if (!isLogin) {
           setIsLogin(true);
           setEmail("");
@@ -235,8 +233,6 @@ const UserAuth = () => {
         const { data } = response;
         if (data.success) {
           dispatch(setLoggedInUser(data.user));
-          // localStorage.setItem("token", data.token);
-          // localStorage.setItem("email", data.user.email);
           toast.success("Google login successful!");
           navigate("/");
           if (!isLogin) {
@@ -262,7 +258,6 @@ const UserAuth = () => {
 
   return (
     <>
-    {/* {userSignedIn && <Navigate to="/" replace={true} />} */}
     <div
       className="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 bg-gray-100"
       style={{
@@ -442,6 +437,13 @@ const UserAuth = () => {
           Are you a vendor?{" "}
           <Link to="/signup" className="text-indigo-600 hover:underline">
             List your business here
+          </Link>
+        </p>
+
+        <p className="text-sm text-center text-gray-500 dark:text-gray-400">
+          Admin?{" "}
+          <Link to="/admin/login" className="text-purple-600 hover:underline font-medium">
+            Login to Admin Dashboard
           </Link>
         </p>
       </div>

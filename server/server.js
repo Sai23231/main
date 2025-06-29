@@ -33,6 +33,13 @@ import sponsorRoutes from "./routes/sponsor.routes.js";
 import proposalRoutes from "./routes/proposal.routes.js";
 import volunteerRoutes from "./routes/volunteer.routes.js";
 import eventVolunteerRoutes from "./routes/eventVolunteer.routes.js";
+import adminRoutes from "./routes/admin.routes.js";
+import notificationRoutes from "./routes/notification.routes.js";
+import customPackageRoutes from './routes/customPackage.routes.js';
+import bookingInquiryRoutes from './routes/bookingInquiry.routes.js';
+import serviceInquiryRoutes from './routes/serviceInquiry.routes.js';
+import updateRequestRoutes from './routes/updateRequest.routes.js';
+import portfolioRoutes from './routes/portfolio.routes.js';
 
 // Initialize app
 const app = express();
@@ -41,15 +48,15 @@ const PORT = process.env.PORT || 8001;
 // Connect to DB
 connectDB();
 
-// Middlewares
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Middlewares with increased payload limits
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(cookieParser());
 app.use(express.static("public"));
 
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || "https://dreamwedz.in",
+    origin: ["http://localhost:5173", "https://dreamwedz.in"], // Allow both localhost and production
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     credentials: true,
   })
@@ -104,6 +111,38 @@ app.use("/api/sponsor", sponsorRoutes);
 app.use("/api/proposal", proposalRoutes);
 app.use("/api/volunteer", volunteerRoutes);
 app.use("/api/eventVolunteer", eventVolunteerRoutes);
+app.use("/api/admin", adminRoutes);
+app.use("/api/notifications", notificationRoutes);
+app.use('/api/custom-package', customPackageRoutes);
+app.use('/api/booking-inquiry', bookingInquiryRoutes);
+app.use('/api/service-inquiry', serviceInquiryRoutes);
+app.use('/api/update-request', updateRequestRoutes);
+app.use('/api/portfolio', portfolioRoutes);
+// Error handling middleware
+app.use((err, req, res, next) => {
+  if (err.type === 'entity.too.large') {
+    return res.status(413).json({
+      success: false,
+      message: 'Request entity too large. Please reduce the size of your request.',
+      error: 'PayloadTooLargeError'
+    });
+  }
+  
+  if (err.type === 'entity.parse.failed') {
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid JSON format in request body.',
+      error: 'InvalidJSONError'
+    });
+  }
+  
+  console.error('Server error:', err);
+  res.status(500).json({
+    success: false,
+    message: 'Internal server error',
+    error: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong'
+  });
+});
 
 // Start server
 server.listen(PORT, "0.0.0.0", () => {

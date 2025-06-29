@@ -18,6 +18,16 @@ const userSchema = new mongoose.Schema(
       // unique: true,
       trim: true,
     },
+    role: {
+      type: String,
+      enum: ['organizer', 'sponsor', 'admin'],
+      default: 'organizer'
+    },
+    name: {
+      type: String,
+      // required: true,
+      trim: true,
+    }
   },
   { timestamps: true }
 );

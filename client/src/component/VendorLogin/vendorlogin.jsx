@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { setLoggedInUser } from '../UserLogin/authSlice';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 
 const VendorLogin = () => {
   const [credentials, setCredentials] = useState({ identifier: '', password: '' });
@@ -11,6 +11,7 @@ const VendorLogin = () => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const user = useSelector(state => state.auth.loggedInUser);
 
   // Handle input change
   const handleChange = (e) => {
@@ -30,29 +31,23 @@ const VendorLogin = () => {
       const response = await axios.post(
         `${import.meta.env.VITE_BACKEND_URL}/vendor/login`,
         credentials, { withCredentials: true }
-        // {
-        //   headers: {
-        //     'Content-Type': 'application/json',
-        //   },
-        // }
       );
 
       const { data } = response;
 
       if (data.success) {
-        // Store auth data
-        dispatch(setLoggedInUser(data.vendor));
-        // localStorage.setItem('token', data.token);
-        // localStorage.setItem('email', data.vendor.email);
-        // localStorage.setItem('vendorId', data.vendor.id);
+        // Store auth data with role information
+        const vendorWithRole = {
+          ...data.vendor,
+          role: 'vendor'
+        };
+        dispatch(setLoggedInUser(vendorWithRole));
         
         // Show success message
-        toast.success('Login successful! Redirecting...');
+        toast.success('Login successful!');
         
-        // Navigate to the new vendor dashboard
-        setTimeout(() => {
-          navigate('/vendor-dashboard');
-        }, 1000);
+        // Navigate to the vendor dashboard immediately
+        navigate('/dashboard');
       } else {
         throw new Error(data.message || 'Login failed');
       }
@@ -74,6 +69,13 @@ const VendorLogin = () => {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    // Check if user is already logged in as vendor
+    if (user && user.role === 'vendor') {
+      navigate('/vendor-dashboard');
+    }
+  }, [user, navigate]);
 
   return (
     <div className="min-h-screen bg-[url('/path/to/your/background.jpg')] bg-cover bg-center flex items-center justify-center">
@@ -137,6 +139,12 @@ const VendorLogin = () => {
               Don't have an account?{' '}
               <a href="/vendor-register" className="text-pink-600 hover:text-pink-500">
                 Register here
+              </a>
+            </p>
+            <p className="text-sm text-gray-600 mt-2">
+              Are you an existing vendor?{' '}
+              <a href="/vendor-claim" className="text-blue-600 hover:text-blue-500">
+                Claim Your Business
               </a>
             </p>
           </div>

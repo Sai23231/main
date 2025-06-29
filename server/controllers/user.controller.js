@@ -1,5 +1,5 @@
 import User from "../models/user.model.js";
-import Vendor from "../models/vendor.register.model.js";
+import VendorList from "../models/vendor.model.js";
 import bcrypt from "bcrypt";
 import { generateAccessToken } from "../utils/accessToken.js";
 import jwt from "jsonwebtoken";
@@ -98,7 +98,8 @@ export const signup = async (req, res) => {
 
     let decoded;
     try {
-      decoded = jwt.verify(otpToken, process.env.ACCESS_TOKEN_SECRET);
+      const jwtSecret = process.env.ACCESS_TOKEN_SECRET || 'your-fallback-access-token-secret-key-change-this-in-production';
+      decoded = jwt.verify(otpToken, jwtSecret);
     } catch (error) {
       return res.status(400).json({
         success: false,
@@ -201,45 +202,6 @@ export const login = async (req, res) => {
   try {
     const { identifier, password } = req.body;
 
-    const isAdmin = identifier.endsWith('@admin.com');
-
-    if (isAdmin) {    //Admin login
-      const user = await User.findOne({ email: identifier });
-      if (!user) {
-        return res.status(401).json({
-          success: false,
-          message: 'Admin not found',
-        });
-      }
-      // Check password
-      const isPasswordValid = await bcrypt.compare(password, user.password);
-      if (!isPasswordValid) {
-        return res.status(401).json({
-          success: false,
-          message: "Invalid credentials",
-        });
-      }
-
-      const data = {
-        id: 'admin',
-        email: identifier,
-      };
-
-      const token = generateAccessToken(data);
-
-      return res
-      .cookie("token", token, { httpOnly: true })
-      .json({
-        success: true,
-        message: 'Admin Login Successful',
-        // token,
-        user: {
-          id: 'admin',
-          email: identifier,
-        },
-      });
-    }
-
     // Find user by email or phone number
     const user = await User.findOne({
       $or: [{ email: identifier }, { phoneNumber: identifier }],
@@ -248,7 +210,7 @@ export const login = async (req, res) => {
     if (!user) {
       return res.status(401).json({
         success: false,
-        message: "Please signup",
+        message: "User not found. Please signup first.",
       });
     }
 
@@ -261,27 +223,55 @@ export const login = async (req, res) => {
       });
     }
 
-    // Generate token
+    // Check if user is admin
+    if (user.role === 'admin') {
+      const data = {
+        id: user._id,
+        email: user.email,
+        role: 'admin',
+        name: user.name
+      };
+
+      const token = generateAccessToken(data);
+
+      return res
+        .cookie("token", token, { httpOnly: true })
+        .json({
+          success: true,
+          message: 'Admin Login Successful',
+          user: {
+            id: user._id,
+            email: user.email,
+            role: 'admin',
+            name: user.name
+          },
+        });
+    }
+
+    // Regular user login
     const data = {
       id: user._id,
       email: user.email,
       phoneNumber: user.phoneNumber,
+      role: user.role || 'organizer',
+      name: user.name
     };
 
     const token = generateAccessToken(data);
 
     res
-    .cookie("token", token, options)
-    .json({
-      success: true,
-      message: "Login Successful",
-      // token,
-      user: {
-        id: user._id,
-        email: user.email,
-        phoneNumber: user.phoneNumber,
-      },
-    });
+      .cookie("token", token, options)
+      .json({
+        success: true,
+        message: "Login Successful",
+        user: {
+          id: user._id,
+          email: user.email,
+          phoneNumber: user.phoneNumber,
+          role: user.role || 'organizer',
+          name: user.name
+        },
+      });
   } catch (error) {
     res.status(500).json({
       success: false,
@@ -542,7 +532,8 @@ export const verifyOtp = async (req, res) => {
     }
     let decoded;
     try {
-      decoded = jwt.verify(otpToken, process.env.ACCESS_TOKEN_SECRET);
+      const jwtSecret = process.env.ACCESS_TOKEN_SECRET || 'your-fallback-access-token-secret-key-change-this-in-production';
+      decoded = jwt.verify(otpToken, jwtSecret);
     } catch (error) {
       return res.status(400).json({
         success: false,
@@ -585,7 +576,8 @@ export const verifyOtpToken = async (req, res) => {
         message: "User verification required",
       });
     }
-    const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+    const jwtSecret = process.env.ACCESS_TOKEN_SECRET || 'your-fallback-access-token-secret-key-change-this-in-production';
+    const decoded = jwt.verify(token, jwtSecret);
     if (!decoded) {
       return res.status(400).json({
         success: false,
@@ -622,7 +614,8 @@ export const resetPass = async (req, res) => {
     }
     let decoded;
     try {
-      decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+      const jwtSecret = process.env.ACCESS_TOKEN_SECRET || 'your-fallback-access-token-secret-key-change-this-in-production';
+      decoded = jwt.verify(token, jwtSecret);
     } catch (error) {
       return res.status(400).json({
         success: false,
@@ -659,7 +652,8 @@ export const checkAuth = async (req, res) => {
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+    const jwtSecret = process.env.ACCESS_TOKEN_SECRET || 'your-fallback-access-token-secret-key-change-this-in-production';
+    const decoded = jwt.verify(token, jwtSecret);
     const { id, email } = decoded;
 
     // Check if the ID and email belong to a User
@@ -669,7 +663,7 @@ export const checkAuth = async (req, res) => {
     }
 
     // Check if the ID and email belong to a Vendor
-    const vendor = await Vendor.findById(id).select("-password");
+    const vendor = await VendorList.findById(id).select("-password");
     if (vendor) {
       return res.status(200).json({ vendor, role: 'vendor' });
     }

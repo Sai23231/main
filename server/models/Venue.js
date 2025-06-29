@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-const venueSchema = new mongoose.Schema({
+const simpleVenueSchema = new mongoose.Schema({
   name: { type: String, required: true },
   location: { type: String, required: true },
   averageRating: {
@@ -10,5 +10,5 @@ const venueSchema = new mongoose.Schema({
   reviewCount: { type: Number, default: 0 },
 });
 
-const Venue = mongoose.model("Venue", venueSchema);
-export default Venue;
+const SimpleVenue = mongoose.model("SimpleVenue", simpleVenueSchema);
+export default SimpleVenue;

@@ -1,12 +1,15 @@
 import { useDispatch, useSelector } from 'react-redux'
 import { Toaster } from "react-hot-toast";
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import SearchResults from "../src/component/SearchBar/Search.jsx";
 import VendorRegistration from "./component/VendorRegistration/VendorRegistration.jsx";
+import VendorRegistrationSuccess from "./component/VendorRegistration/VendorRegistrationSuccess.jsx";
 import DetailsPage from "./component/Vendors/InviteGifts/Detail.jsx";
 // import Dashboard from "./component/Navbar/Dashboard.jsx";
-import AdminDashboard from "./component/AdminDashboard/Admin.jsx";
+import AdminDashboard from "./component/AdminDashboard/AdminDashboard.jsx";
+import AdminLogin from "./component/AdminLogin/AdminLogin.jsx";
+import AdminRegistration from "./component/AdminLogin/AdminRegistration.jsx";
 import Example from "./component/Cards/wcategory.jsx";
 import Home from "./component/home/Home.jsx";
 import Menu from "./component/Menue/Menu.jsx";
@@ -27,11 +30,11 @@ import Allcategory from "./component/SearchBar/allcity/allcategory.jsx";
 import WishlistPage from "./component/Vendors/InviteGifts/wishlist.jsx";
 import Blogs from "./component/Blog/blogsection.jsx";
 import Profile from "./component/Navbar/myprofile.jsx";
-import VendorDashboard from "./component/VendorDashboard/VendorDashboard.jsx";
+import NewVendorDashboard from "./component/VendorDashboard/NewVendorDashboard.jsx";
 import SearchComponent from "../src/component/SearchBar/Search.jsx";
 import GalleryLayout from "./component/photo/GalleryLayout.jsx";
 import CustomerSupport from "./component/footer/CustomerSupport.jsx";
-import WeddingPackages from "./component/pricing plans/Pricing.jsx";
+import Packages from './component/pricing plans/EventPackage.jsx';
 import BookingForm from "./component/pricing plans/Bookingform.jsx";
 import SubHome from "./component/home/SuBHome.jsx";
 import BudgetManager from "./component/Weddingplanner/Budget.jsx";
@@ -59,10 +62,21 @@ import PreviewPage from "./component/EInvites/PreviewPage";
 import CustomisationCard from "./component/EInvites/CustomisationCard.jsx";
 import DreamSponsorFeature from "./component/Event/EventDashboard.jsx";
 import Protected from "./component/Root/Protected.jsx";
+import AdminProtected from "./component/Root/AdminProtected.jsx";
+import VendorProtected from "./component/Root/VendorProtected.jsx";
+import VenueProtected from "./component/Root/VenueProtected.jsx";
 
-import { checkAuthAsync, selectUserChecked } from "./component/UserLogin/authSlice.js";
+import { checkAuthAsync, checkAdminAuthAsync, selectUserChecked, setUserChecked } from "./component/UserLogin/authSlice.js";
 import { useEffect } from 'react';
 import SponsorConnect from './component/Sponsers/EventDashboard.jsx';
+import SponsorDashboard from './component/Sponsers/SponsorDashboard.jsx';
+import VendorClaim from './component/VendorLogin/VendorClaim.jsx';
+import VenueDashboard from "./component/VenueDashboard/VenueDashboard.jsx";
+import VenueLogin from "./component/VenueLogin/VenueLogin.jsx";
+import VenueRegistration from "./component/VenueRegistration/VenueRegistration.jsx";
+import VenueRegistrationSuccess from "./component/VenueRegistration/VenueRegistrationSuccess.jsx";
+import VenueClaim from './component/VenueLogin/VenueClaim.jsx';
+import UnifiedDashboard from './component/UnifiedDashboard/UnifiedDashboard';
 
 const router = createBrowserRouter([
   {
@@ -81,6 +95,10 @@ const router = createBrowserRouter([
       {
         path: "/sponserconnect",
         element: <SponsorConnect/>,
+      },
+      {
+        path: "/sponserdashboard",
+        element: <SponsorDashboard/>,
       },
       {
         path: "/best-event-planner",
@@ -193,7 +211,19 @@ const router = createBrowserRouter([
       },
       {
         path: "/admin/dashboard",
-        element: <AdminDashboard />,
+        element: (
+          <AdminProtected>
+            <AdminDashboard />
+          </AdminProtected>
+        ),
+      },
+      {
+        path: "/admin/login",
+        element: <AdminLogin />,
+      },
+      {
+        path: "/admin/register",
+        element: <AdminRegistration />,
       },
       {
         path: "/userlogin",
@@ -205,7 +235,7 @@ const router = createBrowserRouter([
       },
       {
         path: "/vendor-dashboard",
-        element: <Protected><VendorDashboard /></Protected>,
+        element: <Protected><NewVendorDashboard /></Protected>,
       },
       {
         path: "/forgotpassword",
@@ -268,7 +298,7 @@ const router = createBrowserRouter([
       },
       {
         path: "/weddingpackage",
-        element: <WeddingPackages />,
+        element: <Packages />,
       },
       {
         path: "/pricingplans",
@@ -312,6 +342,38 @@ const router = createBrowserRouter([
         path: "/customise/:cardType/:titleSlug",
         element: <CustomisationCard />,
       },
+      {
+        path: "/vendor-claim",
+        element: <VendorClaim />,
+      },
+      {
+        path: "/vendor-registration",
+        element: <VendorRegistration />,
+      },
+      {
+        path: "/vendor-registration-success",
+        element: <VendorRegistrationSuccess />,
+      },
+      {
+        path: "/dashboard",
+        element: <Protected><UnifiedDashboard /></Protected>,
+      },
+      {
+        path: "/venue-login",
+        element: <VenueLogin />,
+      },
+      {
+        path: "/venue-registration",
+        element: <VenueRegistration />,
+      },
+      {
+        path: "/venue-registration-success",
+        element: <VenueRegistrationSuccess />,
+      },
+      {
+        path: "/venue-claim",
+        element: <VenueClaim />,
+      },
     ],
   },
 ]);
@@ -321,7 +383,9 @@ function App() {
   const userChecked = useSelector(selectUserChecked);
 
   useEffect(() => {
-    dispatch(checkAuthAsync());
+    // Set userChecked to true immediately to render the app
+    // Authentication will be checked when accessing protected routes
+    dispatch(setUserChecked(true));
   }, [dispatch]);
 
   return (

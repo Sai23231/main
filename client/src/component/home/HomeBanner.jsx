@@ -33,9 +33,9 @@ function VenueCard({ venue }) {
   return (
     <div className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col h-full">
       <div className="h-48 w-full relative flex-shrink-0">
-        {venue.coverImgSrc ? (
+        {venue.CoverImage ? (
           <img
-            src={venue.coverImgSrc}
+            src={venue.CoverImage}
             alt={venue.name}
             className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
           />
@@ -113,7 +113,7 @@ export default function DreamventzHomepage() {
   const fetchVenues = async () => {
     try {
       const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/venue`);
-      return response.data;
+      return Array.isArray(response.data.venues) ? response.data.venues : [];
     } catch (error) {
       console.error("Error fetching venues:", error);
       throw error;
@@ -201,11 +201,7 @@ export default function DreamventzHomepage() {
   }
 }, [location, venues]);
 
-  if (loading) return (
-    <div className="flex justify-center items-center h-screen">
-      <div className="text-xl font-semibold">Loading data...</div>
-    </div>
-  );
+  if (loading) return null; // Don't show loading, just return null
   
   if (error) return (
     <div className="flex justify-center items-center h-screen">

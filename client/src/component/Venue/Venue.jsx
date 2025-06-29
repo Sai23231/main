@@ -3,6 +3,7 @@ import axios from "axios";
 import Select from "react-select";
 import { useNavigate, useParams } from "react-router-dom";
 import VenueForm from "../Banner/Filter";
+import { FaBuilding, FaUserPlus, FaSignInAlt, FaStar, FaMapMarkerAlt, FaUsers } from "react-icons/fa";
 
 const Venue = () => {
   const { city } = useParams();
@@ -18,6 +19,28 @@ const Venue = () => {
   });
 
   const navigate = useNavigate();
+
+  // Helper function to safely render venue data
+  const safeRender = (value) => {
+    if (value === null || value === undefined) return '';
+    if (typeof value === 'string' || typeof value === 'number') return value;
+    if (Array.isArray(value)) return value.join(', ');
+    if (typeof value === 'object') {
+      // Handle specific object types
+      if (value.seating && value.maxCapacity) {
+        return `${value.seating} seating, ${value.maxCapacity} max`;
+      }
+      if (value.seating) return `${value.seating} seating`;
+      if (value.maxCapacity) return `${value.maxCapacity} max`;
+      // For other objects, try to convert to string safely
+      try {
+        return JSON.stringify(value);
+      } catch {
+        return 'N/A';
+      }
+    }
+    return String(value);
+  };
 
   const cityOptions = [
     { value: "Mumbai", label: "Mumbai" },
@@ -39,11 +62,10 @@ const Venue = () => {
       try {
         setLoading(true);
         const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/venue`);
-        setAllVenues(response.data);
-        setDisplayedVenues(response.data); // Initially show all venues
-        
-        // Fetch reviews for all venues
-        response.data.forEach(venue => {
+        const venuesArray = Array.isArray(response.data.venues) ? response.data.venues : [];
+        setAllVenues(venuesArray);
+        setDisplayedVenues(venuesArray);
+        venuesArray.forEach(venue => {
           fetchReviews(venue._id);
         });
       } catch (error) {
@@ -52,7 +74,6 @@ const Venue = () => {
         setLoading(false);
       }
     };
-    
     fetchData();
   }, []);
 
@@ -185,80 +206,117 @@ const Venue = () => {
   }));
 
   if (loading) {
-    return <div className="text-center py-8">Loading venues...</div>;
+    return null; // Don't show loading, just return null
   }
 
   return (
     <>
-    <VenueForm></VenueForm>
+      <VenueForm></VenueForm>
+      
+      {/* Venue Owner CTA Section */}
       
 
-      {displayedVenues.length === 0 ? (
-        <div className="text-center py-8">
-          No venues match your filters. Try adjusting your search criteria.
+      {Array.isArray(displayedVenues) && displayedVenues.length === 0 ? (
+        <div className="text-center py-12">
+          <div className="text-gray-400 text-6xl mb-4">🏛️</div>
+          <h3 className="text-xl font-semibold text-gray-800 mb-2">No venues found</h3>
+          <p className="text-gray-600 mb-6">Try adjusting your search criteria or filters.</p>
+          <button
+            onClick={resetFilters}
+            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Clear Filters
+          </button>
         </div>
       ) : (
         <div className="grid md:grid-cols-3 sm:grid-cols-2 gap-8 mx-8 mb-8">
-          {displayedVenues.map((venue) => (
+          {Array.isArray(displayedVenues) && displayedVenues.map((venue) => (
             <div
               key={venue._id}
               onClick={() => handleVenueClick(venue._id)}
-              className="relative flex flex-col w-full max-w-[26rem] rounded-xl bg-white border
-                shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 cursor-pointer"
+              className="group bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer border border-gray-100"
             >
-              <div className="relative group">
+              <div className="relative overflow-hidden">
                 <img
-                  src={venue.coverImgSrc}
+                  src={venue.coverImgSrc || venue.CoverImage || "https://via.placeholder.com/400x300?text=Venue+Image"}
                   alt={venue.name}
-                  className="w-full h-[300px] object-cover transform group-hover:scale-105 transition-transform duration-500"
+                  className="w-full h-56 object-cover group-hover:scale-105 transition-transform duration-500"
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = "https://via.placeholder.com/400x300?text=Image+Not+Available";
+                  }}
                 />
-                <div className="absolute inset-0 bg-gradient-to-t" />
+                
+                {/* Rating Badge */}
+                <div className="absolute top-3 right-3 bg-white/95 px-2 py-1 rounded-full flex items-center gap-1 shadow-sm">
+                  <FaStar className="text-yellow-500 text-xs" />
+                  <span className="text-xs font-semibold text-gray-800">
+                    {reviews[venue._id]?.averageRating || "N/A"}
+                  </span>
+                </div>
               </div>
 
-              <div className="p-6">
-                <h5 className="text-2xl font-bold text-blue-gray-900 mb-2">
+              <div className="p-5">
+                <h5 className="text-xl font-semibold text-gray-800 mb-2 group-hover:text-pink-600 transition-colors line-clamp-1">
                   {venue.name}
                 </h5>
-                <p className="flex items-center gap-1.5 text-base text-yellow-600">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                    className="w-4 h-4"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M10.868 2.884c-.321-.772-1.415-.772-1.736 0l-1.83 4.401-4.753.381c-.833.067-1.171 1.107-.536 1.651l3.62 3.102-1.106 4.637c-.194.813.691 1.456 1.405 1.02L10 15.591l4.069 2.485c.713.436 1.598-.207 1.404-1.02l-1.106-4.637 3.62-3.102c.635-.544.297-1.584-.536-1.65l-4.752-.382-1.831-4.401Z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  <span className="font-semibold">
+                
+                <div className="flex items-center gap-1.5 text-sm text-yellow-600 mb-3">
+                  <FaStar className="text-yellow-500" />
+                  <span className="font-medium">
                     {reviews[venue._id]?.averageRating || "N/A"} (
                     {reviews[venue._id]?.count || 0} reviews)
                   </span>
-                </p>
-
-                <p className="text-lg text-gray-600 mb-1">{venue.location}</p>
-
-                <div className="flex flex-wrap gap-2 mb-2">
-                  <span className="bg-gray-100 text-gray-800 text-sm font-medium px-2.5 py-0.5 rounded">
-                    {venue.pax}
-                  </span>
-                  <span className="bg-gray-100 text-gray-800 text-sm font-medium px-2.5 py-0.5 rounded">
-                    {venue.guests}
-                  </span>
                 </div>
-                <div className="flex flex-wrap gap-2 mb-2">
-                  <span className="bg-green-400 text-green-100 text-sm font-medium px-2.5 py-0.5 rounded">
-                    Veg: {venue.price?.veg || "NA"} /- plate
-                  </span>
-                  <span className="bg-red-400 text-gray-100 text-sm font-medium px-2.5 py-0.5 rounded">
-                    Non Veg: {venue.price?.nonVeg || "NA"} /- plate
-                  </span>
+
+                <div className="flex items-center gap-2 text-gray-600 mb-3 text-sm">
+                  <FaMapMarkerAlt className="text-pink-400 flex-shrink-0" />
+                  <span className="line-clamp-1">{venue.location}</span>
                 </div>
-                <span className="bg-gray-100 text-gray-800 text-lg font-medium px-2.5 py-0.5 rounded">
-                  Rental price: {venue.rentPrice}
-                </span>
+
+                <div className="flex flex-wrap gap-1.5 mb-3">
+                  {venue.pax && (
+                    <span className="bg-pink-50 text-pink-700 text-xs font-medium px-2 py-1 rounded-md">
+                      {safeRender(venue.pax)}
+                    </span>
+                  )}
+                  {venue.guests && (
+                    <span className="bg-pink-50 text-pink-700 text-xs font-medium px-2 py-1 rounded-md">
+                      {safeRender(venue.guests)} guests
+                    </span>
+                  )}
+                  {venue.capacity && (
+                    <span className="bg-pink-50 text-pink-700 text-xs font-medium px-2 py-1 rounded-md flex items-center gap-1">
+                      <FaUsers className="text-xs" />
+                      {safeRender(venue.capacity)}
+                    </span>
+                  )}
+                </div>
+                
+                <div className="flex flex-wrap gap-1.5 mb-3">
+                  {venue.price?.veg && venue.price.veg !== "NA" && (
+                    <span className="bg-green-50 text-green-700 text-xs font-medium px-2 py-1 rounded-md">
+                      Veg: ₹{venue.price.veg}/plate
+                    </span>
+                  )}
+                  {venue.price?.nonVeg && venue.price.nonVeg !== "NA" && (
+                    <span className="bg-red-50 text-red-700 text-xs font-medium px-2 py-1 rounded-md">
+                      Non Veg: ₹{venue.price.nonVeg}/plate
+                    </span>
+                  )}
+                </div>
+                
+                {venue.rentPrice && (
+                  <div className="bg-pink-50 text-pink-700 text-base font-semibold px-3 py-2 rounded-lg mb-3">
+                    Rental: ₹{venue.rentPrice}
+                  </div>
+                )}
+                
+                <div className="pt-3 border-t border-gray-100">
+                  <button className="w-full bg-pink-500 hover:bg-pink-600 text-white py-2.5 px-4 rounded-lg font-medium transition-colors">
+                    View Details
+                  </button>
+                </div>
               </div>
             </div>
           ))}

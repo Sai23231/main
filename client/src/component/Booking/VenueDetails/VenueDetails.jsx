@@ -17,9 +17,32 @@ const VenueDetails = () => {
   const { pathname } = useLocation();
   const cleanedPathvenueId = pathname.split("/").pop();
   const [venueData, setVenueData] = useState(null);
+  
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState("overview");
+
+  // Helper function to safely render venue data
+  const safeRender = (value) => {
+    if (value === null || value === undefined) return 'N/A';
+    if (typeof value === 'string' || typeof value === 'number') return value;
+    if (Array.isArray(value)) return value.join(', ');
+    if (typeof value === 'object') {
+      // Handle specific object types
+      if (value.seating && value.maxCapacity) {
+        return `${value.seating} seating, ${value.maxCapacity} max`;
+      }
+      if (value.seating) return `${value.seating} seating`;
+      if (value.maxCapacity) return `${value.maxCapacity} max`;
+      // For other objects, try to convert to string safely
+      try {
+        return JSON.stringify(value);
+      } catch {
+        return 'N/A';
+      }
+    }
+    return String(value);
+  };
 
   useEffect(() => {
     const fetchVenueData = async () => {
@@ -41,14 +64,7 @@ const VenueDetails = () => {
   }, [cleanedPathvenueId]);
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-pink-600"></div>
-          <p className="mt-4 text-gray-600">Loading venue details...</p>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   if (error) {
@@ -103,13 +119,13 @@ const VenueDetails = () => {
                 <div className="bg-pink-50 p-6 rounded-lg border border-pink-100">
                   <h3 className="font-semibold text-gray-800">Seating Capacity</h3>
                   <p className="text-3xl font-bold text-pink-700 mt-2">
-                    {venueData.capacity.seating}
+                    {safeRender(venueData.capacity?.seating)}
                   </p>
                 </div>
                 <div className="bg-pink-50 p-6 rounded-lg border border-pink-100">
                   <h3 className="font-semibold text-gray-800">Maximum Capacity</h3>
                   <p className="text-3xl font-bold text-pink-700 mt-2">
-                    {venueData.capacity.maxCapacity}
+                    {safeRender(venueData.capacity?.maxCapacity)}
                   </p>
                 </div>
               </div>
@@ -380,7 +396,7 @@ const VenueDetails = () => {
                 {venueData.photos.map((photo, index) => (
                   <div key={index} className="h-96">
                     <img
-                      src={photo}
+                      src={photo || "https://via.placeholder.com/800x500?text=Venue+Image"}
                       alt={`Venue ${index + 1}`}
                       className="w-full h-full object-cover"
                       onError={(e) => {

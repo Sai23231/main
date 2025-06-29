@@ -3,8 +3,14 @@ import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   FiSearch, FiX, FiSend, FiChevronRight, FiDollarSign, 
-  FiUsers, FiBriefcase, FiCalendar, FiMapPin, FiUser 
+  FiUsers, FiBriefcase, FiCalendar, FiMapPin, FiUser,
+  FiPlus, FiEdit, FiTrash2, FiEye, FiCheckCircle, FiXCircle, FiTarget,
+  FiCreditCard
 } from 'react-icons/fi';
+import { useSelector, useDispatch } from 'react-redux';
+import { selectLoggedInUser } from '../UserLogin/authSlice';
+import SponsorDashboard from './SponsorDashboard';
+import SponsorPayment from './SponsorPayment.jsx';
 
 const SponsorConnect = () => {
   const [sponsors, setSponsors] = useState([]);
@@ -14,100 +20,90 @@ const SponsorConnect = () => {
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('all');
-  const [userType, setUserType] = useState('organizer');
-  const [organizerProfile, setOrganizerProfile] = useState(null);
+  const [userType, setUserType] = useState(null); // null means user hasn't selected yet
   const [events, setEvents] = useState([]);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [showEventForm, setShowEventForm] = useState(false);
   const [newEvent, setNewEvent] = useState({
-    name: '',
-    date: '',
-    location: '',
+    organizerName: '',
+    eventName: '',
+    eventType: '',
     description: '',
-    expectedAttendees: '',
-    budgetNeeded: ''
+    coverImg: null,
+    eventPdf: null
   });
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [proposals, setProposals] = useState([]);
+  const [showProposals, setShowProposals] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [selectedProposal, setSelectedProposal] = useState(null);
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
 
-  // Check authentication on component mount
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      setIsAuthenticated(true);
-      // You might want to verify the token with your backend here
-    }
-  }, []);
+  // Use Redux auth state
+  const user = useSelector(selectLoggedInUser);
+  const isAuthenticated = !!user;
 
-  // Fetch sponsors, organizer profile, and events
+  // If user type is sponsor, render SponsorDashboard
+  if (userType === 'sponsor') {
+    return <SponsorDashboard />;
+  }
+
+  // Fetch data based on user type
   useEffect(() => {
     const fetchData = async () => {
+      if (!isAuthenticated || !userType) return;
+      
       setIsLoading(true);
       try {
-        // Fetch sponsors with filters
-        const sponsorsRes = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/sponsors`, {
-          params: {
-            industry: filter === 'all' ? '' : filter,
-            search: searchQuery
-          },
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`
-          }
-        });
-        setSponsors(sponsorsRes.data);
-
-        // Fetch organizer profile if logged in as organizer
         if (userType === 'organizer') {
-          const profileRes = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/auth/me`, {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem('token')}`
-            }
-          });
-          setOrganizerProfile(profileRes.data);
+          // Fetch sponsors with filters - no authentication needed for public sponsor list
+          let sponsorsUrl = `${import.meta.env.VITE_BACKEND_URL}/sponsor`;
+          if (filter && filter !== 'all') {
+            sponsorsUrl += `/industry/${filter}`;
+          }
+          
+          const sponsorsRes = await axios.get(sponsorsUrl);
+          setSponsors(sponsorsRes.data);
           
           // Fetch organizer's events
-          const eventsRes = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/events`, {
-            params: { organizerId: profileRes.data._id },
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem('token')}`
-            }
+          const eventsRes = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/events/organizerEvents`, {
+            withCredentials: true
           });
           setEvents(eventsRes.data);
+        } else if (userType === 'sponsor') {
+          // Fetch user's proposals if sponsor
+          const proposalsRes = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/proposal/sponsorProposals`, {
+            withCredentials: true
+          });
+          setProposals(proposalsRes.data);
         }
       } catch (err) {
         console.error('Error fetching data', err);
         if (err.response?.status === 401) {
-          // Handle unauthorized
-          localStorage.removeItem('token');
-          setIsAuthenticated(false);
+          window.location.href = '/userlogin';
         }
       } finally {
         setIsLoading(false);
       }
     };
     
-    if (isAuthenticated) {
       const debounceTimer = setTimeout(() => {
         fetchData();
       }, 300);
       
       return () => clearTimeout(debounceTimer);
-    }
-  }, [filter, searchQuery, userType, isAuthenticated]);
+  }, [filter, searchQuery, isAuthenticated, userType]);
 
   const sendConnectionRequest = async () => {
     if (!selectedSponsor || !message || !selectedEvent) return;
     
     try {
-      await axios.post(`${import.meta.env.VITE_BACKEND_URL}/proposals/create`, {
+      await axios.post(`${import.meta.env.VITE_BACKEND_URL}/proposal/create`, {
         eventId: selectedEvent._id,
         sponsorId: selectedSponsor._id,
-        amount: 0, // You might want to add amount input in your form
-        message,
-        status: 'Pending'
+        amount: 0,
+        message
       }, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`
-        }
+        withCredentials: true
       });
       alert('Proposal created successfully!');
       setSelectedSponsor(null);
@@ -117,60 +113,58 @@ const SponsorConnect = () => {
       console.error('Error sending proposal', err);
       alert('Failed to send proposal');
       if (err.response?.status === 401) {
-        localStorage.removeItem('token');
-        setIsAuthenticated(false);
+        window.location.href = '/userlogin';
       }
     }
   };
 
   const createNewEvent = async () => {
     try {
-      const res = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/events/create`, {
-        ...newEvent,
-        organizerId: organizerProfile._id
-      }, {
+      const formData = new FormData();
+      formData.append('organizerName', newEvent.organizerName);
+      formData.append('eventName', newEvent.eventName);
+      formData.append('eventType', newEvent.eventType);
+      formData.append('description', newEvent.description);
+      
+      if (newEvent.coverImg) {
+        formData.append('CoverImage', newEvent.coverImg);
+      }
+      if (newEvent.eventPdf) {
+        formData.append('EventPdf', newEvent.eventPdf);
+      }
+
+      const res = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/events/create`, formData, {
+        withCredentials: true,
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`
+          'Content-Type': 'multipart/form-data'
         }
       });
-      setEvents([...events, res.data]);
+      
+      setEvents([...events, res.data.event]);
       setShowEventForm(false);
       setNewEvent({
-        name: '',
-        date: '',
-        location: '',
+        organizerName: '',
+        eventName: '',
+        eventType: '',
         description: '',
-        expectedAttendees: '',
-        budgetNeeded: ''
+        coverImg: null,
+        eventPdf: null
       });
     } catch (err) {
       console.error('Error creating event', err);
       alert('Failed to create event');
       if (err.response?.status === 401) {
-        localStorage.removeItem('token');
-        setIsAuthenticated(false);
+        window.location.href = '/userlogin';
       }
     }
   };
 
-  const handleLogin = async (credentials) => {
-    try {
-      const res = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/auth/login`, credentials);
-      localStorage.setItem('token', res.data.token);
-      setIsAuthenticated(true);
-      // You might want to set user type based on response
-    } catch (err) {
-      console.error('Login failed', err);
-      alert('Login failed. Please check your credentials.');
-    }
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    setIsAuthenticated(false);
-    setOrganizerProfile(null);
-    setEvents([]);
-    setSponsors([]);
+  const handleFileChange = (e, field) => {
+    const file = e.target.files[0];
+    setNewEvent(prev => ({
+      ...prev,
+      [field]: file
+    }));
   };
 
   const industries = [
@@ -183,15 +177,169 @@ const SponsorConnect = () => {
     { id: 'health', name: 'Health & Wellness', icon: <FiBriefcase className="mr-2" /> },
   ];
 
- 
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Authentication Required</h2>
+          <p className="text-gray-600 mb-6">
+            Please log in to access the sponsor connection platform.
+          </p>
+          <button 
+            onClick={() => window.location.href = '/userlogin'}
+            className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+          >
+            Go to Login
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // User Type Selection Screen
+  if (!userType) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
+        <div className="max-w-2xl w-full">
+          <div className="text-center mb-8">
+            <h1 className="text-4xl font-bold text-gray-900 mb-4">Welcome to SponsorConnect</h1>
+            <p className="text-xl text-gray-600">
+              Choose your role to get started with the platform
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Organizer Card */}
+            <motion.div
+              whileHover={{ y: -5, scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => setUserType('organizer')}
+              className="bg-white rounded-xl shadow-lg p-8 cursor-pointer border-2 border-transparent hover:border-purple-300 transition-all duration-300"
+            >
+              <div className="text-center">
+                <div className="w-20 h-20 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <FiCalendar className="text-purple-600 text-3xl" />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900 mb-4">Event Organizer</h3>
+                <p className="text-gray-600 mb-6">
+                  Create events, find sponsors, and manage your event partnerships
+                </p>
+                <div className="space-y-3 text-sm text-gray-500">
+                  <div className="flex items-center justify-center">
+                    <FiCheckCircle className="text-green-500 mr-2" />
+                    <span>Create and manage events</span>
+                  </div>
+                  <div className="flex items-center justify-center">
+                    <FiCheckCircle className="text-green-500 mr-2" />
+                    <span>Find relevant sponsors</span>
+                  </div>
+                  <div className="flex items-center justify-center">
+                    <FiCheckCircle className="text-green-500 mr-2" />
+                    <span>Send sponsorship proposals</span>
+                  </div>
+                  <div className="flex items-center justify-center">
+                    <FiCheckCircle className="text-green-500 mr-2" />
+                    <span>Track proposal responses</span>
+                  </div>
+                </div>
+                <button className="mt-6 w-full bg-purple-600 text-white py-3 px-6 rounded-lg hover:bg-purple-700 transition-colors font-medium">
+                  Continue as Organizer
+                </button>
+              </div>
+            </motion.div>
+
+            {/* Sponsor Card */}
+            <motion.div
+              whileHover={{ y: -5, scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => setUserType('sponsor')}
+              className="bg-white rounded-xl shadow-lg p-8 cursor-pointer border-2 border-transparent hover:border-blue-300 transition-all duration-300"
+            >
+              <div className="text-center">
+                <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <FiDollarSign className="text-blue-600 text-3xl" />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900 mb-4">Sponsor</h3>
+                <p className="text-gray-600 mb-6">
+                  Manage sponsorship opportunities and track your event partnerships
+                </p>
+                <div className="space-y-3 text-sm text-gray-500">
+                  <div className="flex items-center justify-center">
+                    <FiCheckCircle className="text-green-500 mr-2" />
+                    <span>View sponsorship requests</span>
+                  </div>
+                  <div className="flex items-center justify-center">
+                    <FiCheckCircle className="text-green-500 mr-2" />
+                    <span>Manage proposal status</span>
+                  </div>
+                  <div className="flex items-center justify-center">
+                    <FiCheckCircle className="text-green-500 mr-2" />
+                    <span>Track partnership analytics</span>
+                  </div>
+                  <div className="flex items-center justify-center">
+                    <FiCheckCircle className="text-green-500 mr-2" />
+                    <span>Communicate with organizers</span>
+                  </div>
+                </div>
+                <button className="mt-6 w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors font-medium">
+                  Continue as Sponsor
+                </button>
+              </div>
+            </motion.div>
+          </div>
+
+          <div className="text-center mt-8">
+            <p className="text-sm text-gray-500">
+              You can change your role anytime from the header menu
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const handlePaymentSuccess = (paymentDetails) => {
+    setPaymentSuccess(true);
+    // Refresh proposals to show updated status
+    fetchProposals();
+    // Close payment modal after a delay
+    setTimeout(() => {
+      setShowPaymentModal(false);
+      setSelectedProposal(null);
+      setPaymentSuccess(false);
+    }, 3000);
+  };
+
+  const handleProposalPayment = (proposal) => {
+    setSelectedProposal(proposal);
+    setShowPaymentModal(true);
+  };
+
+  const handleProposalResponse = async (proposalId, response) => {
+    try {
+      await axios.put(`${import.meta.env.VITE_BACKEND_URL}/proposal/${proposalId}/respond`, {
+        status: response
+      }, {
+        withCredentials: true
+      });
+      // Refresh proposals to show updated status
+      fetchProposals();
+    } catch (err) {
+      console.error('Error responding to proposal', err);
+      alert('Failed to respond to proposal');
+      if (err.response?.status === 401) {
+        window.location.href = '/userlogin';
+      }
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      {/* Header with user type toggle */}
+      {/* Header */}
       <header className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-purple-600">SponsorConnect</h1>
           <div className="flex items-center space-x-4">
+            <h1 className="text-2xl font-bold text-purple-600">SponsorConnect</h1>
             <div className="flex items-center bg-gray-100 rounded-full p-1">
               <button
                 onClick={() => setUserType('organizer')}
@@ -204,21 +352,30 @@ const SponsorConnect = () => {
               <button
                 onClick={() => setUserType('sponsor')}
                 className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                  userType === 'sponsor' ? 'bg-purple-600 text-white' : 'text-gray-700 hover:bg-gray-200'
+                  userType === 'sponsor' ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-200'
                 }`}
               >
                 Sponsor
               </button>
             </div>
-            {organizerProfile && (
+          </div>
+          
+          {user && (
+            <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2">
                 <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center">
                   <FiUser className="text-purple-600" />
                 </div>
-                <span className="text-sm font-medium">{organizerProfile.name}</span>
+                <span className="text-sm font-medium">{user.name || user.email?.split('@')[0]}</span>
+              </div>
+              <button
+                onClick={() => setUserType(null)}
+                className="text-sm text-gray-500 hover:text-gray-700"
+              >
+                Change Role
+              </button>
               </div>
             )}
-          </div>
         </div>
       </header>
 
@@ -239,9 +396,10 @@ const SponsorConnect = () => {
                 <h2 className="text-lg font-medium text-gray-900">Your Events</h2>
                 <button
                   onClick={() => setShowEventForm(true)}
-                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center"
                 >
-                  + Create New Event
+                  <FiPlus className="mr-2" />
+                  Create New Event
                 </button>
               </div>
 
@@ -257,14 +415,14 @@ const SponsorConnect = () => {
                           : 'border-gray-200 hover:border-purple-300'
                       }`}
                     >
-                      <h3 className="font-bold text-gray-900">{event.name}</h3>
+                      <h3 className="font-bold text-gray-900">{event.eventName}</h3>
                       <div className="flex items-center text-sm text-gray-500 mt-1">
                         <FiCalendar className="mr-1" />
-                        <span>{new Date(event.date).toLocaleDateString()}</span>
+                        <span>{new Date(event.createdAt).toLocaleDateString()}</span>
                       </div>
                       <div className="flex items-center text-sm text-gray-500 mt-1">
-                        <FiMapPin className="mr-1" />
-                        <span>{event.location}</span>
+                        <FiBriefcase className="mr-1" />
+                        <span>{event.eventType}</span>
                       </div>
                     </div>
                   ))}
@@ -384,38 +542,80 @@ const SponsorConnect = () => {
                           </div>
                         </div>
 
-                        <div className="space-y-3 text-sm mb-6">
+                        {sponsor.companyDescription && (
+                          <p className="text-sm text-gray-600 mb-4 line-clamp-2">
+                            {sponsor.companyDescription}
+                          </p>
+                        )}
+
+                        <div className="space-y-3 text-sm mb-4">
                           <div className="flex items-center">
                             <FiDollarSign className="text-gray-400 mr-2" />
                             <span className="font-medium">Budget Range:</span>
-                            <span className="ml-1">{sponsor.budgetRange || 'Flexible'}</span>
+                            <span className="ml-1">{sponsor.budget || 'Flexible'}</span>
                           </div>
                           <div className="flex items-center">
                             <FiUsers className="text-gray-400 mr-2" />
-                            <span className="font-medium">Target Audience:</span>
-                            <span className="ml-1">{sponsor.targetAudience || 'Various'}</span>
+                            <span className="font-medium">Industry:</span>
+                            <span className="ml-1">{sponsor.industry}</span>
                           </div>
+                          {sponsor.targetAudience && (
                           <div className="flex items-center">
-                            <FiBriefcase className="text-gray-400 mr-2" />
-                            <span className="font-medium">Past Sponsorships:</span>
-                            <span className="ml-1">{sponsor.pastEvents?.length || '0'} events</span>
-                          </div>
-                          {sponsor.preferredEventTypes && (
-                            <div className="flex items-start">
-                              <FiCalendar className="text-gray-400 mr-2 mt-1" />
-                              <div>
-                                <span className="font-medium">Prefers:</span>
-                                <div className="flex flex-wrap gap-1 mt-1">
-                                  {sponsor.preferredEventTypes.map(type => (
-                                    <span key={type} className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
-                                      {type}
-                                    </span>
-                                  ))}
-                                </div>
-                              </div>
+                              <FiTarget className="text-gray-400 mr-2" />
+                              <span className="font-medium">Target:</span>
+                              <span className="ml-1 text-xs">{sponsor.targetAudience}</span>
                             </div>
                           )}
                         </div>
+
+                        {/* Deliverables */}
+                        {sponsor.deliverables && sponsor.deliverables.length > 0 && (
+                          <div className="mb-4">
+                            <h4 className="text-sm font-medium text-gray-900 mb-2">Deliverables:</h4>
+                            <div className="space-y-1">
+                              {sponsor.deliverables.slice(0, 2).map((deliverable, index) => (
+                                <div key={index} className="flex items-center text-xs">
+                                  <span className={`px-2 py-1 rounded-full text-xs font-medium mr-2 ${
+                                    deliverable.type === 'financial' ? 'bg-green-100 text-green-800' :
+                                    deliverable.type === 'in-kind' ? 'bg-blue-100 text-blue-800' :
+                                    deliverable.type === 'services' ? 'bg-purple-100 text-purple-800' :
+                                    deliverable.type === 'products' ? 'bg-orange-100 text-orange-800' :
+                                    deliverable.type === 'marketing' ? 'bg-pink-100 text-pink-800' :
+                                    'bg-gray-100 text-gray-800'
+                                  }`}>
+                                    {deliverable.type}
+                                  </span>
+                                  <span className="text-gray-600">{deliverable.description}</span>
+                                </div>
+                              ))}
+                              {sponsor.deliverables.length > 2 && (
+                                <div className="text-xs text-gray-500">
+                                  +{sponsor.deliverables.length - 2} more deliverables
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Sponsorship Levels */}
+                        {sponsor.sponsorshipLevels && sponsor.sponsorshipLevels.length > 0 && (
+                          <div className="mb-4">
+                            <h4 className="text-sm font-medium text-gray-900 mb-2">Sponsorship Levels:</h4>
+                            <div className="space-y-1">
+                              {sponsor.sponsorshipLevels.slice(0, 2).map((level, index) => (
+                                <div key={index} className="flex justify-between items-center text-xs">
+                                  <span className="font-medium">{level.name}</span>
+                                  <span className="text-purple-600 font-semibold">₹{level.amount?.toLocaleString()}</span>
+                                </div>
+                              ))}
+                              {sponsor.sponsorshipLevels.length > 2 && (
+                                <div className="text-xs text-gray-500">
+                                  +{sponsor.sponsorshipLevels.length - 2} more levels
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
 
                         <button
                           onClick={() => setSelectedSponsor(sponsor)}
@@ -437,15 +637,173 @@ const SponsorConnect = () => {
             )}
           </>
         ) : (
-          <div className="text-center py-20">
-            <div className="max-w-md mx-auto">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">Sponsor Dashboard</h2>
-              <p className="text-gray-600 mb-6">
-                As a sponsor, you can view connection requests and manage your sponsorship opportunities.
+          // Sponsor Dashboard
+          <div className="space-y-8">
+            <div className="text-center mb-12">
+              <h1 className="text-4xl font-bold text-gray-900 mb-4">Sponsor Dashboard</h1>
+              <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+                Manage your sponsorship opportunities and track your proposals
               </p>
-              <button className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
-                Go to Sponsor Dashboard
+            </div>
+
+            {/* Quick Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              <div className="bg-white rounded-xl shadow-md p-6">
+                <div className="flex items-center">
+                  <div className="p-3 bg-blue-100 rounded-full">
+                    <FiEye className="text-blue-600 text-xl" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600">Total Proposals</p>
+                    <p className="text-2xl font-bold text-gray-900">{proposals.length}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-xl shadow-md p-6">
+                <div className="flex items-center">
+                  <div className="p-3 bg-yellow-100 rounded-full">
+                    <FiCalendar className="text-yellow-600 text-xl" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600">Pending</p>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {proposals.filter(p => p.status === 'Pending').length}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-xl shadow-md p-6">
+                <div className="flex items-center">
+                  <div className="p-3 bg-green-100 rounded-full">
+                    <FiDollarSign className="text-green-600 text-xl" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600">Approved</p>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {proposals.filter(p => p.status === 'Approved').length}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Proposals Table */}
+            <div className="bg-white rounded-xl shadow-md overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-200">
+                <h2 className="text-lg font-medium text-gray-900">Your Proposals</h2>
+              </div>
+              
+              {proposals.length === 0 ? (
+                <div className="text-center py-12">
+                  <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                    <FiSend className="text-gray-400 text-2xl" />
+                  </div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No proposals yet</h3>
+                  <p className="text-gray-500">
+                    Start connecting with event organizers to see your proposals here.
+                  </p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Event
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Amount
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Status
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Date
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {proposals.map((proposal) => (
+                        <tr key={proposal._id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div>
+                              <div className="text-sm font-medium text-gray-900">
+                                {proposal.eventId?.eventName || 'Unknown Event'}
+                              </div>
+                              <div className="text-sm text-gray-500">
+                                {proposal.eventId?.eventType || 'N/A'}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            ${proposal.amount}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                              proposal.status === 'Approved' 
+                                ? 'bg-green-100 text-green-800'
+                                : proposal.status === 'Rejected'
+                                ? 'bg-red-100 text-red-800'
+                                : 'bg-yellow-100 text-yellow-800'
+                            }`}>
+                              {proposal.status}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {new Date(proposal.date).toLocaleDateString()}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <div className="flex gap-2 mt-4">
+                              {proposal.status === 'pending' && (
+                                <>
+                                  <button
+                                    onClick={() => handleProposalResponse(proposal._id, 'accepted')}
+                                    className="flex-1 bg-green-600 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
+                                  >
+                                    Accept
+                                  </button>
+                                  <button
+                                    onClick={() => handleProposalResponse(proposal._id, 'rejected')}
+                                    className="flex-1 bg-red-600 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-red-700 transition-colors"
+                                  >
+                                    Reject
+                                  </button>
+                                </>
+                              )}
+                              {proposal.status === 'accepted' && (
+                                <button
+                                  onClick={() => handleProposalPayment(proposal)}
+                                  className="w-full bg-purple-600 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors flex items-center justify-center gap-2"
+                                >
+                                  <FiCreditCard className="w-4 h-4" />
+                                  Pay ₹{proposal.amount?.toLocaleString()}
               </button>
+                              )}
+                              {proposal.status === 'paid' && (
+                                <div className="w-full bg-green-100 text-green-800 py-2 px-4 rounded-lg text-sm font-medium flex items-center justify-center gap-2">
+                                  <FiCheckCircle className="w-4 h-4" />
+                                  Payment Completed
+                                </div>
+                              )}
+                              {proposal.status === 'rejected' && (
+                                <div className="w-full bg-red-100 text-red-800 py-2 px-4 rounded-lg text-sm font-medium flex items-center justify-center gap-2">
+                                  <FiXCircle className="w-4 h-4" />
+                                  Rejected
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -471,9 +829,9 @@ const SponsorConnect = () => {
                   <p className="text-sm text-gray-500">{selectedSponsor.industry}</p>
                   {selectedEvent && (
                     <div className="mt-2 p-2 bg-gray-50 rounded-lg">
-                      <p className="text-sm font-medium">For Event: {selectedEvent.name}</p>
+                      <p className="text-sm font-medium">For Event: {selectedEvent.eventName}</p>
                       <p className="text-xs text-gray-500">
-                        {new Date(selectedEvent.date).toLocaleDateString()} • {selectedEvent.location}
+                        {new Date(selectedEvent.createdAt).toLocaleDateString()} • {selectedEvent.eventType}
                       </p>
                     </div>
                   )}
@@ -532,7 +890,7 @@ const SponsorConnect = () => {
             <motion.div 
               initial={{ scale: 0.9, y: 20 }}
               animate={{ scale: 1, y: 0 }}
-              className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6"
+              className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto"
             >
               <div className="flex justify-between items-start mb-4">
                 <h2 className="text-xl font-bold text-gray-900">Create New Event</h2>
@@ -546,36 +904,43 @@ const SponsorConnect = () => {
 
               <div className="space-y-4">
                 <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Organizer Name</label>
+                  <input
+                    type="text"
+                    value={newEvent.organizerName}
+                    onChange={(e) => setNewEvent({...newEvent, organizerName: e.target.value})}
+                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    placeholder="Your Name"
+                  />
+                </div>
+
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Event Name</label>
                   <input
                     type="text"
-                    value={newEvent.name}
-                    onChange={(e) => setNewEvent({...newEvent, name: e.target.value})}
+                    value={newEvent.eventName}
+                    onChange={(e) => setNewEvent({...newEvent, eventName: e.target.value})}
                     className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     placeholder="Annual Tech Conference"
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
-                    <input
-                      type="date"
-                      value={newEvent.date}
-                      onChange={(e) => setNewEvent({...newEvent, date: e.target.value})}
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Event Type</label>
+                  <select
+                    value={newEvent.eventType}
+                    onChange={(e) => setNewEvent({...newEvent, eventType: e.target.value})}
                       className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
-                    <input
-                      type="text"
-                      value={newEvent.location}
-                      onChange={(e) => setNewEvent({...newEvent, location: e.target.value})}
-                      className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      placeholder="New York, NY"
-                    />
-                  </div>
+                  >
+                    <option value="">Select Event Type</option>
+                    <option value="Conference">Conference</option>
+                    <option value="Workshop">Workshop</option>
+                    <option value="Seminar">Seminar</option>
+                    <option value="Exhibition">Exhibition</option>
+                    <option value="Concert">Concert</option>
+                    <option value="Sports">Sports</option>
+                    <option value="Other">Other</option>
+                  </select>
                 </div>
 
                 <div>
@@ -589,25 +954,23 @@ const SponsorConnect = () => {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Expected Attendees</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Cover Image</label>
                     <input
-                      type="number"
-                      value={newEvent.expectedAttendees}
-                      onChange={(e) => setNewEvent({...newEvent, expectedAttendees: e.target.value})}
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleFileChange(e, 'coverImg')}
                       className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      placeholder="500"
                     />
                   </div>
+
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Budget Needed ($)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Event PDF</label>
                   <input
-                    type="number"
-                    value={newEvent.budgetNeeded}
-                    onChange={(e) => setNewEvent({...newEvent, budgetNeeded: e.target.value})}
+                    type="file"
+                    accept=".pdf"
+                    onChange={(e) => handleFileChange(e, 'eventPdf')}
                     className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    placeholder="10000"
                   />
                 </div>
               </div>
@@ -622,16 +985,27 @@ const SponsorConnect = () => {
                 <button
                   onClick={createNewEvent}
                   className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-                  disabled={!newEvent.name || !newEvent.date || !newEvent.location}
+                  disabled={!newEvent.organizerName || !newEvent.eventName || !newEvent.eventType || !newEvent.description}
                 >
                   Create Event
                 </button>
               </div>
-            </div>
+            </motion.div>
           </motion.div>
-        </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Payment Modal */}
+      {showPaymentModal && selectedProposal && (
+        <SponsorPayment
+          proposal={selectedProposal}
+          onPaymentSuccess={handlePaymentSuccess}
+          onClose={() => {
+            setShowPaymentModal(false);
+            setSelectedProposal(null);
+          }}
+        />
       )}
-    </AnimatePresence>
   </div>
 );
 };

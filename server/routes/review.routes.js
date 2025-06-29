@@ -5,7 +5,7 @@ import {
     getVenueReviewsById,
     getVendorReviewsById
 } from '../controllers/review.controller.js';
-import verifyToken from '../middleware/verifyToken.js';
+import { verifyToken } from '../middleware/verifyToken.js';
 
 const router = express.Router();
 router.post("/addVenueReview/:venueId", verifyToken, addVenueReview);

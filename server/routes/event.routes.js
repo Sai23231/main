@@ -9,8 +9,8 @@ import {
   getEventsByType,
   updateEvent,
 } from "../controllers/event.controller.js";
-import verifyToken from "../middleware/verifyToken.js";
-import { upload } from "../middleware/multerConfig.js";
+import { verifyToken } from "../middleware/verifyToken.js";
+import { upload, handleMulterError } from "../middleware/multerConfig.js";
 
 const router = Router();
 
@@ -25,7 +25,9 @@ router.post('/create',
     { name: 'CoverImage', maxCount: 1 },
     { name: 'EventPdf', maxCount: 1 }
   ]), 
-createEvent);
+  handleMulterError,
+  createEvent
+);
 
 router
   .get('/:eventId',verifyToken,getEventById)
@@ -35,7 +37,9 @@ router
     { name: 'CoverImage', maxCount: 1 },
     { name: 'EventPdf', maxCount: 1 }
     ]), 
-  updateEvent)
+    handleMulterError,
+    updateEvent
+  )
   .delete('/:eventId',verifyToken,deleteEvent);
 
 export default router;

@@ -1,11 +1,27 @@
 import React, { useState } from "react";
-import Packages from "./Pricing";
+import Packages from "./EventPackage";
+import CustomPackage from "./CustomPackage";
+import { FiGift, FiStar, FiUsers, FiMapPin, FiCalendar, FiHeart, FiArrowRight, FiChevronRight } from "react-icons/fi";
+import { useSelector } from "react-redux";
+import { selectLoggedInUser } from "../UserLogin/authSlice";
+import { useNavigate } from "react-router-dom";
 
 const PricingTable = () => {
   const [selectedItem, setSelectedItem] = useState(null);
   const [isModalOpen, setModalOpen] = useState(false);
   const [isSubmitted, setSubmitted] = useState(false);
   const [activeCategory, setActiveCategory] = useState("all");
+  const [showCustomizer, setShowCustomizer] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    phone: '',
+    eventDate: '',
+    vision: ''
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  const user = useSelector(selectLoggedInUser);
+  const navigate = useNavigate();
 
   const pricingPlans = [
    
@@ -211,15 +227,105 @@ const PricingTable = () => {
     setSubmitted(false);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setSubmitted(true);
+    setIsSubmitting(true);
+    
+    try {
+      const inquiryData = {
+        name: formData.name,
+        phone: formData.phone,
+        eventDate: formData.eventDate,
+        vision: formData.vision,
+        service: selectedItem
+      };
+
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/service-inquiry/create`, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          ...(user?.token && { Authorization: `Bearer ${user.token}` })
+        },
+        body: JSON.stringify(inquiryData)
+      });
+
+      const data = await res.json();
+      
+      if (data.success) {
+        setSubmitted(true);
+        setFormData({ name: '', phone: '', eventDate: '', vision: '' });
+        
+        // If user is logged in, redirect to dashboard after a delay
+        if (user) {
+          setTimeout(() => {
+            navigate("/user-dashboard");
+          }, 3000);
+        }
+      } else {
+        alert("Failed to submit inquiry: " + (data.message || "Unknown error"));
+      }
+    } catch (err) {
+      alert("Error submitting inquiry: " + err.message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
+  const handleInputChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  // If customizer is shown, return the CustomPackage component
+  if (showCustomizer) {
+    return <CustomPackage />;
+  }
+
   return (
-    <div className="font-sans bg-gray-50">
+    <div className="font-sans bg-gradient-to-br from-pink-50 to-purple-50 min-h-screen">
+      {/* Hero Section with MakeMyTrip-style design */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-pink-500 to-purple-600 text-white">
+        <div className="max-w-7xl mx-auto text-center">
+          <h1 className="text-4xl md:text-6xl font-bold mb-6">
+            Plan Your Perfect Event
+            <span className="block text-pink-200">Like Never Before</span>
+          </h1>
+         
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <button
+              onClick={() => setShowCustomizer(true)}
+              className="bg-white text-pink-600 px-8 py-4 rounded-xl font-bold text-lg hover:shadow-lg hover:scale-105 transition-all duration-200 flex items-center justify-center space-x-2"
+            >
+              <span>Start Building Your Event</span>
+              <FiArrowRight className="w-5 h-5" />
+            </button>
+            <button className="border-2 border-white text-white px-8 py-4 rounded-xl font-bold text-lg hover:bg-white hover:text-pink-600 transition-all duration-200">
+              View Packages
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* Features Section */}
       
-<Packages></Packages>
+
+      {/* Event Packages Section */}
+      <section className="py-20 bg-gradient-to-br from-pink-50 to-purple-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              Pre-Built Event Packages
+            </h2>
+            <p className="text-xl text-gray-600">
+              Choose from our curated packages or build your own
+            </p>
+          </div>
+          <Packages />
+        </div>
+      </section>
+      
       {/* À La Carte Services */}
       <section className="py-16 px-4 bg-white">
         <div className="max-w-7xl mx-auto">
@@ -227,7 +333,7 @@ const PricingTable = () => {
             <h2 className="text-3xl font-bold text-gray-800 mb-2">
               Individual Services
             </h2>
-            <div className="w-20 h-1 bg-pink-500 mx-auto"></div>
+            <div className="w-20 h-1 bg-gradient-to-r from-pink-500 to-purple-600 mx-auto"></div>
             <p className="text-gray-600 mt-4 max-w-2xl mx-auto">
               Mix and match services to create your perfect wedding experience
             </p>
@@ -241,7 +347,7 @@ const PricingTable = () => {
                 onClick={() => setActiveCategory(category.id)}
                 className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
                   activeCategory === category.id
-                    ? "bg-pink-600 text-white"
+                    ? "bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-lg"
                     : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                 }`}
               >
@@ -255,7 +361,7 @@ const PricingTable = () => {
             {filteredServices.map((service, index) => (
               <div
                 key={index}
-                className="bg-gray-50 rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-all duration-300"
+                className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 card-hover border border-gray-100"
               >
                 <div className="relative h-48 overflow-hidden">
                   <img
@@ -276,9 +382,10 @@ const PricingTable = () => {
                   <p className="text-gray-600 mb-4">{service.description}</p>
                   <button
                     onClick={() => handleChoose(service)}
-                    className="w-full py-2 px-4 bg-pink-600 text-white font-medium rounded-lg hover:bg-pink-700 transition-all"
+                    className="w-full py-3 px-4 bg-gradient-to-r from-pink-500 to-purple-600 text-white font-medium rounded-xl hover:shadow-lg transition-all duration-200 flex items-center justify-center space-x-2"
                   >
-                    Book Service
+                    <span>Book Service</span>
+                    <FiChevronRight className="w-4 h-4" />
                   </button>
                 </div>
               </div>
@@ -288,18 +395,18 @@ const PricingTable = () => {
       </section>
 
       {/* FAQ Section */}
-      <section className="py-16 px-4 bg-white">
+      <section className="py-16 px-4 bg-gradient-to-br from-gray-50 to-white">
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-800 mb-2">
               Frequently Asked Questions
             </h2>
-            <div className="w-20 h-1 bg-pink-500 mx-auto"></div>
+            <div className="w-20 h-1 bg-gradient-to-r from-pink-500 to-purple-600 mx-auto"></div>
           </div>
 
           <div className="space-y-6">
             {faqs.map((faq, index) => (
-              <div key={index} className="border-b border-gray-200 pb-6">
+              <div key={index} className="bg-white rounded-xl p-6 shadow-md border border-gray-100">
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">
                   {faq.question}
                 </h3>
@@ -311,27 +418,28 @@ const PricingTable = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-16 px-4 bg-gradient-to-r from-purple-600 to-pink-500 text-white">
+      <section className="py-20 px-4 bg-gradient-to-r from-pink-500 to-purple-600 text-white">
         <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-3xl font-bold mb-4">
-            Ready to Begin Your Journey?
+          <h2 className="text-3xl md:text-4xl font-bold mb-6">
+            Ready to Create Your Perfect Event?
           </h2>
-          <p className="text-xl mb-8 max-w-2xl mx-auto">
-            Schedule a free consultation with our wedding experts today
+          <p className="text-xl mb-8 max-w-2xl mx-auto text-pink-100">
+            Join thousands of happy customers who've planned their dream events with us
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-4">
+            <button
+              onClick={() => setShowCustomizer(true)}
+              className="bg-white text-pink-600 px-8 py-4 rounded-xl font-bold text-lg hover:shadow-lg hover:scale-105 transition-all duration-200 flex items-center justify-center space-x-2"
+            >
+              <span>Start Planning Now</span>
+              <FiArrowRight className="w-5 h-5" />
+            </button>
             <a
               href="tel:+919876543210"
-              className="flex items-center justify-center bg-white text-pink-600 font-bold py-3 px-6 rounded-full hover:bg-gray-100 transition-all duration-300"
+              className="flex items-center justify-center bg-transparent border-2 border-white text-white font-bold py-4 px-8 rounded-xl hover:bg-white hover:text-pink-600 transition-all duration-200"
             >
               📞 Call Us Now
             </a>
-            <button
-              onClick={() => handleChoose({ service: "Consultation" })}
-              className="flex items-center justify-center bg-transparent border-2 border-white font-bold py-3 px-6 rounded-full hover:bg-white/10 transition-all duration-300"
-            >
-              ✉️ Email Inquiry
-            </button>
           </div>
         </div>
       </section>
@@ -339,10 +447,10 @@ const PricingTable = () => {
       {/* Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl max-w-md w-full overflow-hidden shadow-2xl">
+          <div className="bg-white rounded-2xl max-w-md w-full overflow-hidden shadow-2xl">
             {!isSubmitted ? (
               <>
-                <div className="bg-pink-600 text-white p-6">
+                <div className="bg-gradient-to-r from-pink-500 to-purple-600 text-white p-6">
                   <h3 className="text-2xl font-bold">
                     Inquire About {selectedItem?.plan || selectedItem?.service}
                   </h3>
@@ -356,7 +464,10 @@ const PricingTable = () => {
                       </label>
                       <input
                         type="text"
-                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                        name="name"
+                        value={formData.name}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all duration-200"
                         required
                       />
                     </div>
@@ -367,18 +478,24 @@ const PricingTable = () => {
                       </label>
                       <input
                         type="tel"
-                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                        name="phone"
+                        value={formData.phone}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all duration-200"
                         required
                       />
                     </div>
 
                     <div>
                       <label className="block text-gray-700 font-medium mb-2">
-                        Wedding Date
+                        Event Date
                       </label>
                       <input
                         type="date"
-                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                        name="eventDate"
+                        value={formData.eventDate}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all duration-200"
                         required
                       />
                     </div>
@@ -388,9 +505,12 @@ const PricingTable = () => {
                         Your Vision
                       </label>
                       <textarea
+                        name="vision"
+                        value={formData.vision}
+                        onChange={handleInputChange}
                         rows={4}
-                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                        placeholder="Tell us about your dream wedding..."
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all duration-200"
+                        placeholder="Tell us about your dream event..."
                         required
                       />
                     </div>
@@ -400,15 +520,17 @@ const PricingTable = () => {
                     <button
                       type="button"
                       onClick={closeModal}
-                      className="px-4 py-2 text-gray-700 font-medium rounded-lg hover:bg-gray-100"
+                      className="px-4 py-2 text-gray-700 font-medium rounded-lg hover:bg-gray-100 transition-all duration-200"
+                      disabled={isSubmitting}
                     >
                       Cancel
                     </button>
                     <button
                       type="submit"
-                      className="px-6 py-2 bg-pink-600 text-white font-bold rounded-lg hover:bg-pink-700 transition-all"
+                      disabled={isSubmitting}
+                      className="px-6 py-2 bg-gradient-to-r from-pink-500 to-purple-600 text-white font-bold rounded-lg hover:shadow-lg transition-all duration-200 disabled:opacity-50"
                     >
-                      Send Inquiry
+                      {isSubmitting ? 'Sending...' : 'Send Inquiry'}
                     </button>
                   </div>
                 </form>
@@ -435,11 +557,11 @@ const PricingTable = () => {
                 </h3>
                 <p className="text-gray-600 mb-6">
                   We've received your inquiry and will contact you within 24
-                  hours to discuss your wedding plans.
+                  hours to discuss your event plans.
                 </p>
                 <button
                   onClick={closeModal}
-                  className="px-6 py-2 bg-pink-600 text-white font-bold rounded-lg hover:bg-pink-700 transition-all"
+                  className="px-6 py-2 bg-gradient-to-r from-pink-500 to-purple-600 text-white font-bold rounded-lg hover:shadow-lg transition-all duration-200"
                 >
                   Close
                 </button>

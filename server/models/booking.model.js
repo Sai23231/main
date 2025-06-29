@@ -5,12 +5,23 @@ const bookingSchema = new mongoose.Schema(
   {
     vendorId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "VendorList",
-      required: true,
+      ref: "Vendor",
+      required: false,
+      index: true
+    },
+    venueId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Venue",
+      required: false,
+      index: true
     },
     userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
+      required: true,
+    },
+    customerName: {
+      type: String,
       required: true,
     },
     phone: {
@@ -25,11 +36,40 @@ const bookingSchema = new mongoose.Schema(
       type: String,
       required: true,
       default: "Pending",
+      enum: ["Pending", "Approved", "Rejected", "Cancelled", "Completed"]
     },
+    // Additional booking details
+    eventType: {
+      type: String,
+      default: "Wedding"
+    },
+    guestCount: {
+      type: Number,
+      default: 0
+    },
+    specialRequirements: {
+      type: String,
+      default: ""
+    },
+    // Vendor response
+    vendorResponse: {
+      message: String,
+      respondedAt: Date,
+      respondedBy: String
+    },
+    // Pricing information
+    quotedPrice: {
+      type: Number,
+      default: 0
+    },
+    finalPrice: {
+      type: Number,
+      default: 0
+    }
   },
   { timestamps: true }
 );
 
 bookingSchema.plugin(mongooseAggregatePaginate);
-const booking = mongoose.model("Booking", bookingSchema);
-export default booking;
+
+export default mongoose.model("Booking", bookingSchema);

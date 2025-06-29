@@ -29,7 +29,7 @@ export default function VenueForm() {
   const fetchVenues = async () => {
     try {
       const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/venue`);
-      return response.data;
+      return Array.isArray(response.data.venues) ? response.data.venues : [];
     } catch (error) {
       console.error("Error fetching venues:", error);
       throw error;
@@ -76,8 +76,8 @@ export default function VenueForm() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const venuesData = await fetchVenues();
-        
+        const venuesDataRaw = await fetchVenues();
+        const venuesData = Array.isArray(venuesDataRaw) ? venuesDataRaw : [];
         // Process venues data to extract cities and add reviews
         const processedVenues = await Promise.all(
           venuesData.map(async (venue) => {
@@ -245,11 +245,7 @@ export default function VenueForm() {
     setRecommendations([]);
   };
 
-  if (loading) return (
-    <div className="flex justify-center items-center h-screen">
-      <div className="text-xl font-semibold">Loading venues data...</div>
-    </div>
-  );
+  if (loading) return null; // Don't show loading, just return null
   
   if (error) return (
     <div className="flex justify-center items-center h-screen">
@@ -333,64 +329,69 @@ export default function VenueForm() {
               {recommendations.map((item, index) => (
                 <div
                   key={index}
-                  className="relative flex flex-col w-full max-w-[26rem] rounded-xl bg-white border shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 cursor-pointer"
+                  className="group bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer border border-gray-100"
                 >
-                  <div className="relative group">
+                  <div className="relative overflow-hidden">
                     {item.venue.coverImgSrc ? (
                       <img 
                         src={item.venue.coverImgSrc} 
                         alt={item.venue.name}
-                        className="w-full h-[300px] object-cover transform group-hover:scale-105 transition-transform duration-500"
+                        className="w-full h-56 object-cover group-hover:scale-105 transition-transform duration-500"
                       />
                     ) : (
-                      <div className="w-full h-[300px] bg-gradient-to-r from-pink-500 to-purple-600 flex items-center justify-center">
+                      <div className="w-full h-56 bg-gradient-to-r from-pink-400 to-pink-500 flex items-center justify-center">
                         <span className="text-white text-lg font-medium">{item.venue.name}</span>
                       </div>
                     )}
-                    <div className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-sm font-semibold shadow-sm">
+                    
+                    <div className="absolute top-3 right-3 bg-white/95 px-2 py-1 rounded-full text-xs font-semibold shadow-sm">
                       {item.score}% Match
                     </div>
                   </div>
-                  <div className="p-6">
-                    <h5 className="text-2xl font-bold text-blue-gray-900 mb-2">
+                  
+                  <div className="p-5">
+                    <h5 className="text-xl font-semibold text-gray-800 mb-2 group-hover:text-pink-600 transition-colors line-clamp-1">
                       {item.venue.name}
                     </h5>
-                    <p className="flex items-center gap-1.5 text-base text-yellow-600">
-                      <FaStar className="w-4 h-4" />
-                      <span className="font-semibold">
+                    
+                    <div className="flex items-center gap-1.5 text-sm text-yellow-600 mb-3">
+                      <FaStar className="text-yellow-500" />
+                      <span className="font-medium">
                         {item.venue.averageRating || "N/A"} (
                         {item.venue.reviewCount || 0} reviews)
                       </span>
-                    </p>
+                    </div>
 
-                    <p className="text-lg text-gray-600 mb-1 flex items-center">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1 text-pink-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div className="flex items-center gap-2 text-gray-600 mb-3 text-sm">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-pink-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                       </svg>
-                      {item.venue.location}
-                    </p>
+                      <span className="line-clamp-1">{item.venue.location}</span>
+                    </div>
 
-                    <div className="flex flex-wrap gap-2 mb-2">
-                      <span className="bg-gray-100 text-gray-800 text-sm font-medium px-2.5 py-0.5 rounded">
+                    <div className="flex flex-wrap gap-1.5 mb-3">
+                      <span className="bg-pink-50 text-pink-700 text-xs font-medium px-2 py-1 rounded-md">
                         Capacity: {item.venue.capacity}
                       </span>
                     </div>
-                    <div className="flex flex-wrap gap-2 mb-2">
+                    
+                    <div className="flex flex-wrap gap-1.5 mb-3">
                       {item.venue.vegPrice && (
-                        <span className="bg-green-400 text-green-100 text-sm font-medium px-2.5 py-0.5 rounded">
+                        <span className="bg-green-50 text-green-700 text-xs font-medium px-2 py-1 rounded-md">
                           Veg: ₹{item.venue.vegPrice}/plate
                         </span>
                       )}
                       {item.venue.nonVegPrice && (
-                        <span className="bg-red-400 text-gray-100 text-sm font-medium px-2.5 py-0.5 rounded">
+                        <span className="bg-red-50 text-red-700 text-xs font-medium px-2 py-1 rounded-md">
                           Non Veg: ₹{item.venue.nonVegPrice}/plate
                         </span>
                       )}
                     </div>
-                    <span className="bg-gray-100 text-gray-800 text-lg font-medium px-2.5 py-0.5 rounded">
+                    
+                    <div className="bg-pink-50 text-pink-700 text-base font-semibold px-3 py-2 rounded-lg">
                       Rental price: {item.venue.rentPrice ? `₹${item.venue.rentPrice.toLocaleString()}` : "On Request"}
-                    </span>
+                    </div>
                   </div>
                 </div>
               ))}

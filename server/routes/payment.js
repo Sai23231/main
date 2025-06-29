@@ -6,15 +6,32 @@ import {
   createOrder,
   verifyPayment,
   getPaymentDetails,
+  createSponsorPaymentOrder,
+  verifySponsorPayment,
+  getOrganizerPayments,
+  getSponsorPayments
 } from "../controllers/payment.controller.js";
 
-// ROUTE 1 : Create Order API Using POST Method http://localhost:3000/api/payment/order
-router.post("/order", createOrder);
+// Middleware import
+import { verifyToken, verifyAdmin } from "../middleware/verifyToken.js";
 
-// ROUTE 2 : Verify Payment Using POST Method http://localhost:3000/api/payment/verify
+// Legacy payment routes (for backward compatibility)
+router.post("/order", createOrder);
+router.post("/create-order", createOrder);
 router.post("/verify", verifyPayment);
 
-// ROUTE 3 : Fetch Payment Details Using GET Method http://localhost:3000/api/payment/get-payment
+// Sponsor payment routes (with authentication)
+router.post("/sponsor/create-order", verifyToken, createSponsorPaymentOrder);
+router.post("/sponsor/verify", verifyToken, verifySponsorPayment);
+
+// Payment history routes
+router.get("/organizer/history", verifyToken, getOrganizerPayments);
+router.get("/sponsor/:sponsorId/history", verifyToken, getSponsorPayments);
+
+// Admin payment details (requires admin role)
+router.get("/admin/details", verifyAdmin, getPaymentDetails);
+
+// Legacy route for backward compatibility
 router.get("/get-payment", getPaymentDetails);
 
-export default router;
+export default router; 
